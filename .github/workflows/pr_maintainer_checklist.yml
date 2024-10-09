@@ -1,16 +1,18 @@
-name: PR Maintainer Checklist
+name: pr_maintainer_checklist
 
 on:
-  pull_request:
-    types: [opened]
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
 
 jobs:
   add_pr_checklist:
     runs-on: ubuntu-latest
     name: Add PR Maintainer Checklist
     permissions:
-      pull-requests: write  # Ensure the job can write comments to the PR
-
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -19,36 +21,28 @@ jobs:
         id: pr_count
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const { data: pullRequests } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'all',
-              per_page: 100  # Fetch a maximum of 100 PRs
+              creator: context.payload.pull_request.user.login
             });
-            const prAuthor = context.payload.pull_request.user.login;
-            const userPRs = pullRequests.filter(pr => pr.user.login === prAuthor);
-            const prCount = userPRs.length;
-            console.log(`PR count: ${prCount}`);
-            return { result: prCount };
+            return pullRequests.length;
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
             ## Thank you for the pull request!
-
+            
             This is PR number ${{ steps.pr_count.outputs.result }} from @${{ github.event.pull_request.user.login }} in this repository.
-
             ${{ steps.pr_count.outputs.result == '1' && '🎉 Congratulations on your first pull request in this repository! 🎉' || '' }}
-
+            
             ### Maintainer Checklist:
             - [ ] Review the changes
             - [ ] Check for code quality and style
             - [ ] Ensure tests pass
             - [ ] Update documentation if needed
             - [ ] Approve or request changes
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the token is properly passed
-          mode: upsert
-          create_if_not_exists: true
