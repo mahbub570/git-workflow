@@ -9,16 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     name: Add PR Maintainer Checklist
     permissions:
-      pull-requests: write
+      pull-requests: write  # This ensures the job can write to PR comments
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      
+
       - name: Get PR author's pull request count
         id: pr_count
         uses: actions/github-script@v6
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { data: pullRequests } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -28,7 +29,7 @@ jobs:
             });
             const prCount = pullRequests.length;
             console.log(`PR count: ${prCount}`);
-            return prCount;
+            return { result: prCount };  # Return result as an object
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
@@ -46,3 +47,6 @@ jobs:
             - [ ] Ensure tests pass
             - [ ] Update documentation if needed
             - [ ] Approve or request changes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Make sure the token is properly passed
+          mode: upsert
+          create_if_not_exists: true
