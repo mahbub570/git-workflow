@@ -32,17 +32,8 @@ jobs:
             return pullRequests.length;
 
       - name: Comment PR
-        uses: thollander/actions-comment-pull-request@v2
+        uses: peter-evans/create-pull-request-comment@v7
         with:
-          message: |
+            body: |
             ## Thank you for the pull request!
-            
-            This is PR number ${{ steps.pr_count.outputs.result }} from @${{ github.event.pull_request.user.login }} in this repository.
-            ${{ steps.pr_count.outputs.result == '1' && '🎉 Congratulations on your first pull request in this repository! 🎉' || '' }}
-            
-            ### Maintainer Checklist:
-            - [ ] Review the changes
-            - [ ] Check for code quality and style
-            - [ ] Ensure tests pass
-            - [ ] Update documentation if needed
-            - [ ] Approve or request changes
+     
