@@ -1,0 +1,50 @@
+name: pr_maintainer_checklist
+on:
+  pull_request_target:
+    branches:
+      - main 
+    types:
+      - opened
+
+jobs:
+  add_pr_checklist:
+    runs-on: ubuntu-latest
+    name: Add PR Maintainer Checklist
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Get PR author's pull request count
+        id: pr_count
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_AUTHOR=${{ github.event.pull_request.user.login }}
+          PR_COUNT=$(gh api graphql -f query='
+            query($author: String!) {
+              user(login: $author) {
+                pullRequests(first: 100, states: [MERGED, OPEN]) {
+                  totalCount
+                }
+              }
+            }' -f author=$PR_AUTHOR --jq '.data.user.pullRequests.totalCount')
+          echo "PR_COUNT=$PR_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Comment PR
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            ## Thank you for the pull request!
+
+            The Scribe team will do our best to address your contribution as soon as we can. The following is a checklist for maintainers to make sure this process goes as well as possible. Feel free to address the points below yourself in further commits if you realize that actions are needed :)
+
+        
+            ### Maintainer checklist
+
+            ${{ steps.pr_count.outputs.PR_COUNT == '1' && format('
+            - [ ] The commit messages for the remote branch should be checked to make sure the contributor''s email is set up correctly so that they receive credit for their contribution
+
+            - The contributor''s name and icon in remote commits should be the same as what appears in the PR\n              
+            - If there''s a mismatch, the contributor needs to make sure that the email they use for GitHub (https://github.com/settings/emails) matches what they have for `git config user.email` in their local Scribe-Data repo') || '' }}
