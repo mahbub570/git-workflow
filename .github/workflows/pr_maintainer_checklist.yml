@@ -26,11 +26,9 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'all',
-              head: `${context.repo.owner}:${context.payload.pull_request.head.ref}`
+              creator: context.payload.pull_request.user.login
             });
-            const prCount = pullRequests.length;
-            console.log(`PR count: ${prCount}`);
-            return prCount;
+            return pullRequests.length;
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
