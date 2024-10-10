@@ -38,7 +38,7 @@ jobs:
 
             This is PR number ${{ steps.pr_count.outputs.result }} from @${{ github.event.pull_request.user.login }} in this repository.
 
-            ${{ steps.pr_count.outputs.result == '13' && '🎉 Congratulations on your first pull request in this repository! 🎉' || '' }}
+            ${{ steps.pr_count.outputs.result == '15' && '🎉 Congratulations on your first pull request in this repository! 🎉' || '' }}
 
             ### Maintainer Checklist:
             - [ ] Review the changes
