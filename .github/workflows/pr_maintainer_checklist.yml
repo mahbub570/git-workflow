@@ -25,10 +25,10 @@ jobs:
             const { data: pullRequests } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: 'closed',
-              creator: context.payload.pull_request.user.login
+              state: 'all',
+              base: 'master',
             });
-            const mergedPRs = pullRequests.filter(pr => pr.merged_at !== null);
+            const mergedPRs = pullRequests.filter(pr => pr.merged && pr.author.login === context.payload.pull_request.user.login);
             return mergedPRs.length;
 
       - name: Set Maintainer Checklist
