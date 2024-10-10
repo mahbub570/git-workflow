@@ -24,6 +24,7 @@ jobs:
           script: |
             let mergedPRs = 0;
             let page = 1;
+            const author = context.payload.pull_request.user.login;
             while (true) {
               const { data: pullRequests } = await github.rest.pulls.list({
                 owner: context.repo.owner,
