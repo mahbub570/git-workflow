@@ -15,12 +15,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-
+      
       - name: Get PR author's pull request count
         id: pr_count
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
             const { data: pullRequests } = await github.rest.pulls.list({
               owner: context.repo.owner,
@@ -28,7 +28,7 @@ jobs:
               state: 'all',
               creator: context.payload.pull_request.user.login
             });
-            return { count: pullRequests.length };
+            return pullRequests.length;
 
       - name: Comment PR
         uses: thollander/actions-comment-pull-request@v2
@@ -36,6 +36,14 @@ jobs:
           message: |
             ## Thank you for the pull request!
 
-            This is PR number ${{ steps.pr_count.outputs.result.count }} from @${{ github.event.pull_request.user.login }} in this repository.
+            This is PR number ${{ steps.pr_count.outputs.result }} from @${{ github.event.pull_request.user.login }} in this repository.
 
-            ${{ steps.pr_count.outputs.result.count == 13 && '### Maintainer Checklist:\n- [ ] Review the changes\n- [ ] Check for code quality and style\n- [ ] Ensure tests pass\n- [ ] Update documentation if needed\n- [ ] Approve or request changes' || '' }}
+            ${{ steps.pr_count.outputs.result == '13' && '🎉 Congratulations on your first pull request in this repository! 🎉' || '' }}
+
+            ### Maintainer Checklist:
+            - [ ] Review the changes
+            - [ ] Check for code quality and style
+            - [ ] Ensure tests pass
+            - [ ] Update documentation if needed
+            - [ ] Approve or request changesRun thollander/actions-comment-pull-request@v2
+ 
