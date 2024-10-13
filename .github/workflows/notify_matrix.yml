@@ -2,7 +2,7 @@ name: Notify Matrix channel of Test Message
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
  
 jobs:
   send-message:
