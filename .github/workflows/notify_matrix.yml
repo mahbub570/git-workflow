@@ -2,7 +2,7 @@ name: Notify Matrix channel of Test Message
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  
+    - cron: '*/5 * * * *'  
   workflow_dispatch:  
 
 jobs:
@@ -23,5 +23,7 @@ jobs:
           Triggered by: GitHub Actions cron job
 
     - name: Stop the job
-      if: env.GITHUB_JOB == 'send-message' && env.GITHUB_RUN_NUMBER % 60 == 0
-      run: exit 0
+      run: |
+        if [ $((GITHUB_RUN_NUMBER % 60)) -eq 0 ]; then
+          exit 0
+        fi
