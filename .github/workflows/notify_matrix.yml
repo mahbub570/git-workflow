@@ -1,13 +1,13 @@
-name: Notify Matrix channel of Issue change
+name: Notify Matrix channel of Test Message
 
 on:
-  issues:
-    types: [opened, closed]
+  schedule:
+    - cron: '*/1 * * * *'
 
 jobs:
   send-message:
     runs-on: ubuntu-latest
-    name: Send message via Matrix
+    name: Send test message via Matrix
     steps:
     - name: Send message to test channel
       id: matrix-chat-message
@@ -17,4 +17,11 @@ jobs:
         token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         channel: ${{ secrets.MATRIX_ROOM_ID }}
         message: |
-          [Issue #${{ github.event.issue.number }}](${{ github.event.issue.html_url }}) ${{ github.event.action }} by [${{ github.actor }}](https://github.com/${{ github.actor }}): **${{ github.event.issue.title }}**
+          🚨 TEST MESSAGE 🚨
+          Sent at: $(date +"%Y-%m-%d %H:%M:%S")
+          Triggered by: GitHub Actions cron job
+
+# To stop the job after running once per hour, add this step:
+    - name: Stop the job
+      if: env.GITHUB_JOB == 'send-message' && env.GITHUB_RUN_NUMBER % 60 == 0
+      run: exit 0
