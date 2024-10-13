@@ -8,7 +8,6 @@ on:
 jobs:
   merge_job:
     # this job will only run if the PR has been merged
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -20,4 +19,4 @@ jobs:
           token: ${{ secrets.MATRIX_TOKEN }}
           channel: '!FMJYOgndLfCFbIUHeP:matrix.org'
           message: |
-            new ovos-audio-gender-classifier PR merged! https://github.com/OpenVoiceOS/ovos-audio-gender-classifier/pull/${{ github.event.number }}
+            new ovos-audio-gelkniujkbiujbiubiubiubii
