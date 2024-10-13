@@ -2,8 +2,9 @@ name: Notify Matrix channel of Test Message
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
- 
+    - cron: '*/15 * * * *'  
+  workflow_dispatch:  
+
 jobs:
   send-message:
     runs-on: ubuntu-latest
@@ -21,7 +22,6 @@ jobs:
           Sent at: $(date +"%Y-%m-%d %H:%M:%S")
           Triggered by: GitHub Actions cron job
 
-# To stop the job after running once per hour, add this step:
     - name: Stop the job
       if: env.GITHUB_JOB == 'send-message' && env.GITHUB_RUN_NUMBER % 60 == 0
       run: exit 0
