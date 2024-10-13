@@ -2,8 +2,8 @@ name: Notify Matrix channel of Test Message
 
 on:
   schedule:
-    - cron: '*/1 * * * *'
-
+    - cron: '*/5 * * * *'
+ 
 jobs:
   send-message:
     runs-on: ubuntu-latest
