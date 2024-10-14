@@ -2,7 +2,7 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '45 9 * * 1'  # Every Monday at 9:45 UTC
+    - cron: '10 10 * * 1'  # Every Monday at 9:45 UTC
   workflow_dispatch:  # Allows manual triggering
 
 env:
@@ -39,9 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: weekindex
     steps:
-      - name: Format EPOCH time
-        id: epoch-time
-        run: echo "EPOCH_TIME=$(date +%s)" >> $GITHUB_ENV
+      - name: Set current date
+        id: set-date
+        run: echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
       - name: Send message to Matrix channel
         id: matrix-chat-message
@@ -55,7 +55,7 @@ jobs:
 
             **Details**:
             - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
-            - This week’s pad: https://etherpad.wikimedia.org/p/activist-dev-sync-$(date +%Y-%m-%d)
+            - This week’s pad: https://etherpad.wikimedia.org/p/activist-dev-sync-${{ env.CURRENT_DATE }}
             - All pads: https://etherpad.wikimedia.org/p/activist-dev-sync
 
             Please reply with anything you'd like to discuss 🧵
