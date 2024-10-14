@@ -2,11 +2,11 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '30 10 * * 3'  # Every Wednesday at 10:30 UTC
+    - cron: '15 11 * * 1'  # Every monday at 10:30 UTC
   workflow_dispatch:  # Allows manual triggering
 
 env:
-  FIRST_RUN_DATE: "2023-09-30"  # Set the first Wednesday you want this to run
+  FIRST_RUN_DATE: "2023-09-30"  # Set the first monday you want this to run
 
 jobs:
   weekindex:
