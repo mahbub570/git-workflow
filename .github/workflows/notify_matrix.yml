@@ -2,40 +2,62 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
-  workflow_dispatch:
+    - cron: '45 9 * * 1'  # Every Monday at 9:45 UTC
+  workflow_dispatch:  # Allows manual triggering
+
+env:
+  FIRST_RUN_DATE: "2024-10-14"  # Set the first Monday you want this to run, wrapped in quotes
 
 jobs:
-  send-message:
+  weekindex:
     runs-on: ubuntu-latest
-    name: Send test message via Matrix
+    outputs:
+      weekindex: ${{ steps.calculate.outputs.weekindex }}
     steps:
-    - name: Format EPOCH time
-      id: epoch-time
-      run: echo "EPOCH_TIME=$(date +%s)" >> $GITHUB_ENV
+      - name: Calculate week difference
+        id: calculate
+        run: |
+          current_date=$(date +%Y-%m-%d)
+          first_run_date=$(date -d "${{ env.FIRST_RUN_DATE }}" +%s)
+          now=$(date -d "$current_date" +%s)
+          weekdiff=$(( (now - first_run_date) / 60 / 60 / 24 / 7 ))
+          weekindex=$(( weekdiff % 2 ))
 
-    - name: Send message to test channel
-      id: matrix-chat-message
-      uses: fadenb/matrix-chat-message@v0.0.6
-      with:
-        homeserver: 'matrix.org'
-        token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        channel: ${{ secrets.MATRIX_ROOM_ID }}
-        message: |
-          Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 16:00 UTC](https://zonestamp.toolforge.org/${{ env.EPOCH_TIME }}) 🧑‍💻♻️
+          echo "weekindex=$weekindex" >> $GITHUB_OUTPUT
+          echo "Current date: $current_date" >> $GITHUB_STEP_SUMMARY
+          echo "First run date: ${{ env.FIRST_RUN_DATE }}" >> $GITHUB_STEP_SUMMARY
+          echo "Week difference: $weekdiff" >> $GITHUB_STEP_SUMMARY
+          echo "Week index: $weekindex" >> $GITHUB_STEP_SUMMARY
 
-          Details for it:
+          if [ $weekindex -eq 0 ]; then
+            echo "🟢 It's time to send the message." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔴 Skipping this week." >> $GITHUB_STEP_SUMMARY
 
-          - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
-          - Pad for this week: https://etherpad.wikimedia.org/p/activist-dev-sync-$(date +%Y-%m-%d)
-          - All dev sync pads: https://etherpad.wikimedia.org/p/activist-dev-sync
+  send-message:
+    if: ${{ needs.weekindex.outputs.weekindex == '0' }}
+    runs-on: ubuntu-latest
+    needs: weekindex
+    steps:
+      - name: Format EPOCH time
+        id: epoch-time
+        run: echo "EPOCH_TIME=$(date +%s)" >> $GITHUB_ENV
 
-          Please reply in the thread for this message with anything you'd like to discuss 🧵
+      - name: Send message to Matrix channel
+        id: matrix-chat-message
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: 'matrix.org'
+          token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+          channel: ${{ secrets.MATRIX_ROOM_ID }}
+          message: |
+            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 16:00 UTC](https://zonestamp.toolforge.org/${{ env.EPOCH_TIME }}) 🧑‍💻♻️
 
-          Thanks and have a great day! ❤️
+            **Details**:
+            - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
+            - This week’s pad: https://etherpad.wikimedia.org/p/activist-dev-sync-$(date +%Y-%m-%d)
+            - All pads: https://etherpad.wikimedia.org/p/activist-dev-sync
 
-    - name: Stop the job after every 60th run
-      run: |
-        if [ $((GITHUB_RUN_NUMBER % 60)) -eq 0 ]; then
-          exit 0
-        fi
+            Please reply with anything you'd like to discuss 🧵
+
+            Thanks and have a great day! ❤️
