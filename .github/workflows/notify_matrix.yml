@@ -2,7 +2,7 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '0 14 * * 0'  # Every Sunday at 14:00 UTC 
+    - cron: '0 14 * 3 *'  # Every Wednesday at 14:00 UTC 
   workflow_dispatch:  # Allows manual triggering
 
 env:
