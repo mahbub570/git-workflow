@@ -32,9 +32,9 @@ jobs:
 
           # Calculate next bi-weekly date
           if [ "$weekdiff" -eq 0 ]; then
-            next_bi_weekly_date=$(date -d "$current_date + 14 days" +%Y-%m-%d)
+            next_bi_weekly_date=$(date -d "$current_date + 14 days" +%Y-%m-%dT%H:%M:%SZ)
           else
-            next_bi_weekly_date=$(date -d "$current_date + 7 days" +%Y-%m-%d)
+            next_bi_weekly_date=$(date -d "$current_date + 7 days" +%Y-%m-%dT%H:%M:%SZ)
           fi
 
           echo "weekdiff=$weekdiff" >> "$GITHUB_OUTPUT"
@@ -56,13 +56,16 @@ jobs:
         run: |
           current_epoch_time=$(date +%s)
           next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }} 15:00:00" +%s)
+          next_rfc3339=$(date -d "@$next_epoch_time" "+%Y-%m-%dT%H:%M:%SZ")
           echo "EPOCH_TIME=$current_epoch_time" >> $GITHUB_ENV
           echo "NEXT_BI_WEEKLY_DATE=${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_ENV
           echo "NEXT_EPOCH_TIME=$next_epoch_time" >> $GITHUB_ENV
+          echo "NEXT_RFC3339=$next_rfc3339" >> $GITHUB_ENV
 
           echo "Current EPOCH time: $current_epoch_time" >> $GITHUB_STEP_SUMMARY
           echo "Next bi-weekly date: ${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
-          echo "Next EPOCH time (for sync): $next_epoch_time" >> $GITHUB_STEP_SUMMARY
+          echo "Next EPOCH time: $next_epoch_time" >> $GITHUB_STEP_SUMMARY
+          echo "Next RFC3339 time: $next_rfc3339" >> $GITHUB_STEP_SUMMARY
 
       - name: Send message to Matrix channel
         id: matrix-chat-message
@@ -72,7 +75,7 @@ jobs:
           token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
           channel: ${{ secrets.MATRIX_ROOM_ID }}
           message: |
-            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🤝♻️
+            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_RFC3339 }}) 🤝♻️
 
             Details for it::
             - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
