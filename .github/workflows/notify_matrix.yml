@@ -2,11 +2,11 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '30 10 * * 3'  # Every Wednesday at 10:30 UTC
+    - cron: '0 15 * * 0'  # Every Sunday at 15:00 UTC 
   workflow_dispatch:  # Allows manual triggering
 
 env:
-  FIRST_RUN_DATE: "2023-09-30"  # Set the first Wednesday you want this to run
+  FIRST_RUN_DATE: "2024-10-09"  # Set the first Wednesday you want this to run
 
 jobs:
   weekindex:
@@ -74,7 +74,7 @@ jobs:
           message: |
             Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 16:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🤝♻️
 
-            **Details**:
+            Details for it::
             - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
             - This week’s pad: https://etherpad.wikimedia.org/p/activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}
             - All pads: https://etherpad.wikimedia.org/p/activist-dev-sync
