@@ -43,6 +43,7 @@ jobs:
             echo "🟢 It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
           else
             echo "🔴 It's the second week of the bi-weekly cycle. The action is going to be skipped." >> $GITHUB_STEP_SUMMARY
+            fi
 
   send-message:
     if: ${{ needs.weekindex.outputs.weekindex == '0' }}
