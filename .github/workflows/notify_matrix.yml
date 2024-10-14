@@ -1,15 +1,19 @@
-name: Notify Matrix channel of Test Message
+name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '*/15 * * * *'  
-  workflow_dispatch:  
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
   send-message:
     runs-on: ubuntu-latest
     name: Send test message via Matrix
     steps:
+    - name: Format EPOCH time
+      id: epoch-time
+      run: echo "EPOCH_TIME=$(date +%s)" >> $GITHUB_ENV
+
     - name: Send message to test channel
       id: matrix-chat-message
       uses: fadenb/matrix-chat-message@v0.0.6
@@ -18,11 +22,19 @@ jobs:
         token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         channel: ${{ secrets.MATRIX_ROOM_ID }}
         message: |
-          🚨 TEST MESSAGE 🚨
-          Sent at: $(date +"%Y-%m-%d %H:%M:%S")
-          Triggered by: GitHub Actions cron job
+          Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 16:00 UTC](https://zonestamp.toolforge.org/${{ env.EPOCH_TIME }}) 🧑‍💻♻️
 
-    - name: Stop the job
+          Details for it:
+
+          - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
+          - Pad for this week: https://etherpad.wikimedia.org/p/activist-dev-sync-$(date +%Y-%m-%d)
+          - All dev sync pads: https://etherpad.wikimedia.org/p/activist-dev-sync
+
+          Please reply in the thread for this message with anything you'd like to discuss 🧵
+
+          Thanks and have a great day! ❤️
+
+    - name: Stop the job after every 60th run
       run: |
         if [ $((GITHUB_RUN_NUMBER % 60)) -eq 0 ]; then
           exit 0
