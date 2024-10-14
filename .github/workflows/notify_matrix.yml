@@ -55,8 +55,11 @@ jobs:
         id: epoch-time
         run: |
           current_epoch_time=$(date +%s)
-          next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date/%T*/} 15:00:00}" +%s)
+          # Remove the time part from the next_bi_weekly_date to get only the date (YYYY-MM-DD)
+          next_date_only=$(echo "${{ needs.weekindex.outputs.next_bi_weekly_date }}" | cut -d'T' -f1)
+          next_epoch_time=$(date -d "${next_date_only} 15:00:00" +%s)
           next_rfc3339=$(date -d "@$next_epoch_time" "+%Y-%m-%dT%H:%M:%SZ")
+          
           echo "EPOCH_TIME=$current_epoch_time" >> $GITHUB_ENV
           echo "NEXT_BI_WEEKLY_DATE=${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_ENV
           echo "NEXT_EPOCH_TIME=$next_epoch_time" >> $GITHUB_ENV
@@ -66,6 +69,7 @@ jobs:
           echo "Next bi-weekly date: ${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
           echo "Next EPOCH time: $next_epoch_time" >> $GITHUB_STEP_SUMMARY
           echo "Next RFC3339 time: $next_rfc3339" >> $GITHUB_STEP_SUMMARY
+
 
       - name: Send message to Matrix channel
         id: matrix-chat-message
