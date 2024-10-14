@@ -2,7 +2,7 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '0 14 * * 0'  # Every Sunday at 15:00 UTC 
+    - cron: '0 14 * * 0'  # Every Sunday at 14:00 UTC 
   workflow_dispatch:  # Allows manual triggering
 
 env:
@@ -43,7 +43,7 @@ jobs:
             echo "🟢 It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
           else
             echo "🔴 It's the second week of the bi-weekly cycle. The action is going to be skipped." >> $GITHUB_STEP_SUMMARY
-            fi
+          fi
 
   send-message:
     if: ${{ needs.weekindex.outputs.weekindex == '0' }}
@@ -55,7 +55,7 @@ jobs:
         id: epoch-time
         run: |
           current_epoch_time=$(date +%s)
-          next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }} 16:00:00" +%s)
+          next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }} 15:00:00" +%s)
           echo "EPOCH_TIME=$current_epoch_time" >> $GITHUB_ENV
           echo "NEXT_BI_WEEKLY_DATE=${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_ENV
           echo "NEXT_EPOCH_TIME=$next_epoch_time" >> $GITHUB_ENV
@@ -72,7 +72,7 @@ jobs:
           token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
           channel: ${{ secrets.MATRIX_ROOM_ID }}
           message: |
-            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 16:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🤝♻️
+            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🤝♻️
 
             Details for it::
             - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
