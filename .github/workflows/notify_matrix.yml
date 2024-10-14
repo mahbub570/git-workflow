@@ -17,20 +17,11 @@ jobs:
       - name: Calculate week difference
         id: calculate
         run: |
-          current_date=$(date +%Y-%m-%d)
-          start=$(date -d "${{ env.FIRST_RUN_DATE }}" +%s)
-          end=$(date -d "$current_date" +%s)
-          weekdiff=$(((end - start) / 60 / 60 / 24 / 7))
-          weekindex=$((weekdiff % 2))
-          echo "weekindex=$weekindex" >> "$GITHUB_OUTPUT"
-          echo "FIRST_RUN_DATE: ${{ env.FIRST_RUN_DATE }}" >> $GITHUB_STEP_SUMMARY
-          echo "current_date: $current_date" >> $GITHUB_STEP_SUMMARY
-          echo "weekdiff: $weekdiff" >> $GITHUB_STEP_SUMMARY
-          echo "weekindex: $weekindex" >> $GITHUB_STEP_SUMMARY
-          if [ "$weekindex" -eq 0 ]; then
-            echo "🟢 It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "🔴 It's the second week of the bi-weekly cycle. The action is going to be skipped." >> $GITHUB_STEP_SUMMARY
+          echo "FIRST_RUN_DATE=${{ env.FIRST_RUN_DATE }}" >> $GITHUB_STEP_SUMMARY
+          echo "current_date=$(date +%Y-%m-%d)" >> $GITHUB_STEP_SUMMARY
+          echo "weekdiff=$((($(date -d "$current_date" +%s) - $(date -d "${{ env.FIRST_RUN_DATE }}" +%s)) / 60 / 60 / 24 / 7))" >> $GITHUB_STEP_SUMMARY
+          echo "weekindex=$((($weekdiff % 2)))" >> $GITHUB_STEP_SUMMARY
+          echo "It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
 
   send-message:
     if: ${{ needs.weekindex.outputs.weekindex == '0' }}
@@ -61,4 +52,4 @@ jobs:
 
             Please reply with anything you'd like to discuss 🧕🏼‍♀️
 
-            Thanks and have a great day! ❤️
+            Thanks and have a great day! ❤️0s
