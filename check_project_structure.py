@@ -1,5 +1,5 @@
 import os
-
+from pathlib import Path
 # Expected languages and data types
 LANGUAGES = {
     "Arabic", "English", "Greek", "Italian", "Malayalam", "Russian", "Tamil",
@@ -24,9 +24,13 @@ SUB_DIRECTORIES = {
     'Pidgin': ['Nigerian'],
     'Punjabi': ['Shahmukhi', 'Gurmukhi']
 }
-
+BASE_DIR = (
+    Path(__file__).parent.parent / "language_data_extraction"
+)
 # Base directory path
-BASE_DIR = "language_data_extraction"
+# BASE_DIR = "src/scribe_data/language_data_extraction"
+
+print(f"Checking if base directory exists: {BASE_DIR}")
 
 def validate_project_structure():
     """Validate that all directories follow the expected project structure and check for unexpected files and directories."""
