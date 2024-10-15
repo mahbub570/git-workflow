@@ -28,7 +28,6 @@ jobs:
       run: |
         python -m venv venv
         source venv/bin/activate
-        pip install -r requirements.txt || echo "No dependencies to install"
 
     # Step 4: Run the structure validation script
     - name: Run check_project_structure.py

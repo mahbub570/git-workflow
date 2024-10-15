@@ -82,6 +82,7 @@ def validate_directories():
         print("Errors found:")
         for error in errors:
             print(f" - {error}")
+        exit(1)  # Exit with a non-zero status to indicate failure
     else:
         print("All directories are correctly named and organized.")
 
