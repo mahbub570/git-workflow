@@ -1,0 +1,37 @@
+name: Check Project Structure
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches:
+      - master
+    types: [opened, reopened, synchronize]
+
+jobs:
+  structure-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the code
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Step 2: Set up Python environment
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    # Step 3: Install dependencies (if needed)
+    - name: Install dependencies
+      run: |
+        python -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt || echo "No dependencies to install"
+
+    # Step 4: Run the structure validation script
+    - name: Run check_project_structure.py
+      run: |
+        source venv/bin/activate
+        python check_project_structure.py
