@@ -25,7 +25,7 @@ SUB_DIRECTORIES = {
     'Punjabi': ['Shahmukhi', 'Gurmukhi']
 }
 BASE_DIR = (
-    Path(__file__).parent.parent / "language_data_extraction"
+    Path(__file__).parent.parent / "src" /"scribe_data" /"language_data_extraction"
 )
 # Base directory path
 # BASE_DIR = "src/scribe_data/language_data_extraction"
