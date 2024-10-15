@@ -26,7 +26,7 @@ SUB_DIRECTORIES = {
 }
  
 
-# Base directory path
+# Base directory path 
 BASE_DIR = "../language_data_extraction"
 
 print(f"Current working directory: {os.getcwd()}")
