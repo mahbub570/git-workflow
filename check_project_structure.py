@@ -29,35 +29,42 @@ SUB_DIRECTORIES = {
 BASE_DIR = "language_data_extraction"
 
 def validate_project_structure():
-    """Validate that all directories follow the expected project structure."""
+    """Validate that all directories follow the expected project structure and check for unexpected files and directories."""
     errors = []
 
-    # Check if the base directory exists
     if not os.path.exists(BASE_DIR):
         print(f"Error: Base directory '{BASE_DIR}' does not exist.")
         exit(1)
+
+    # Check for unexpected files in BASE_DIR
+    for item in os.listdir(BASE_DIR):
+        item_path = os.path.join(BASE_DIR, item)
+        if os.path.isfile(item_path) and item != "__init__.py":
+            errors.append(f"Unexpected file found in BASE_DIR: {item}")
 
     # Iterate through the language directories
     for language in os.listdir(BASE_DIR):
         language_path = os.path.join(BASE_DIR, language)
 
-        # Skip non-directories or __init__.py files
         if not os.path.isdir(language_path) or language == "__init__.py":
             continue
 
-        # Check if the language directory is unexpected
         if language not in LANGUAGES:
             errors.append(f"Unexpected language directory: {language}")
             continue
 
-        # Collect subdirectories for the current language
+        # Check for unexpected files in language directory
+        for item in os.listdir(language_path):
+            item_path = os.path.join(language_path, item)
+            if os.path.isfile(item_path) and item != "__init__.py":
+                errors.append(f"Unexpected file found in {language} directory: {item}")
+
         found_subdirs = {
-            item for item in os.listdir(language_path) 
+            item for item in os.listdir(language_path)
             if os.path.isdir(os.path.join(language_path, item)) and item != "__init__.py"
         }
 
         if language in SUB_DIRECTORIES:
-            # Validate sub-subdirectories for specific languages
             expected_subdirs = set(SUB_DIRECTORIES[language])
             unexpected_subdirs = found_subdirs - expected_subdirs
             missing_subdirs = expected_subdirs - found_subdirs
@@ -66,20 +73,28 @@ def validate_project_structure():
                 errors.append(f"Unexpected sub-subdirectories in '{language}': {unexpected_subdirs}")
             if missing_subdirs:
                 errors.append(f"Missing sub-subdirectories in '{language}': {missing_subdirs}")
+
+            # Check contents of expected sub-subdirectories
+            for subdir in expected_subdirs:
+                subdir_path = os.path.join(language_path, subdir)
+                if os.path.exists(subdir_path):
+                    for item in os.listdir(subdir_path):
+                        item_path = os.path.join(subdir_path, item)
+                        if os.path.isfile(item_path) and item != "__init__.py":
+                            errors.append(f"Unexpected file found in {language}/{subdir}: {item}")
+                        elif os.path.isdir(item_path) and item not in DATA_TYPES:
+                            errors.append(f"Unexpected directory found in {language}/{subdir}: {item}")
         else:
-            # Validate data-type subdirectories for other languages
             unexpected_data_types = found_subdirs - DATA_TYPES
             if unexpected_data_types:
                 errors.append(f"Unexpected subdirectories in '{language}': {unexpected_data_types}")
 
-    # Report errors or confirm success
     if errors:
         print("Errors found:")
         for error in errors:
             print(f" - {error}")
-        exit(1)  # Exit with non-zero status to indicate failure
+        exit(1)
     else:
-        print("All directories are correctly named and organized.")
-
+        print("All directories are correctly named and organized, and no unexpected files or directories were found.")
 if __name__ == "__main__":
     validate_project_structure()
