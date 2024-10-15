@@ -1,7 +1,7 @@
 import os
 
-# Define expected languages and data types
-expected_languages = {
+# Expected languages and data types
+LANGUAGES = {
     "Arabic", "English", "Greek", "Italian", "Malayalam", "Russian", "Tamil",
     "Basque", "Esperanto", "Hausa", "Japanese", "Norwegian", "Slovak", "Ukrainian",
     "Bengali", "Estonian", "Hebrew", "Korean", "Pidgin", "Spanish", "Yoruba",
@@ -10,81 +10,76 @@ expected_languages = {
     "Danish", "German", "Malay", "Punjabi", "Tajik"
 }
 
-expected_data_types = {
+DATA_TYPES = {
     "adjectives", "adverbs", "articles", "autosuggestions", "conjunctions",
     "emoji_keywords", "nouns", "personal_pronouns", "postpositions",
     "prepositions", "pronouns", "proper_nouns", "verbs"
 }
 
-# Define expected sub-subdirectories for specific languages
-sub_sub_dirs = {
+# Sub-subdirectories expected for specific languages
+SUB_DIRECTORIES = {
     'Chinese': ['Mandarin'],
-    'Hindustani': ['Urdu', 'Hindi'],  # Hindustani includes Hindi and Urdu
+    'Hindustani': ['Urdu', 'Hindi'],
     'Norwegian': ['Nynorsk', 'Bokmål'],
     'Pidgin': ['Nigerian'],
     'Punjabi': ['Shahmukhi', 'Gurmukhi']
 }
 
 # Base directory path
-base_dir = "language_data_extraction"
+BASE_DIR = "language_data_extraction"
 
-# Function to validate language and data-type directories
-def validate_directories():
+def validate_project_structure():
+    """Validate that all directories follow the expected project structure."""
     errors = []
 
     # Check if the base directory exists
-    if not os.path.exists(base_dir):
-        print(f"Error: Base directory '{base_dir}' does not exist.")
-        return
+    if not os.path.exists(BASE_DIR):
+        print(f"Error: Base directory '{BASE_DIR}' does not exist.")
+        exit(1)
 
     # Iterate through the language directories
-    for lang in os.listdir(base_dir):
-        lang_path = os.path.join(base_dir, lang)
+    for language in os.listdir(BASE_DIR):
+        language_path = os.path.join(BASE_DIR, language)
 
         # Skip non-directories or __init__.py files
-        if not os.path.isdir(lang_path) or lang == "__init__.py":
+        if not os.path.isdir(language_path) or language == "__init__.py":
             continue
 
-        # Check for unexpected language directories
-        if lang not in expected_languages:
-            errors.append(f"Unexpected language directory: {lang}")
+        # Check if the language directory is unexpected
+        if language not in LANGUAGES:
+            errors.append(f"Unexpected language directory: {language}")
             continue
 
-        # Validate data-type subdirectories within each language
-        subdirs = set(
-            item for item in os.listdir(lang_path) 
-            if os.path.isdir(os.path.join(lang_path, item)) and item != "__init__.py"
-        )
+        # Collect subdirectories for the current language
+        found_subdirs = {
+            item for item in os.listdir(language_path) 
+            if os.path.isdir(os.path.join(language_path, item)) and item != "__init__.py"
+        }
 
-        # Separate validation for languages with sub-subdirectories
-        if lang in sub_sub_dirs:
-            expected_subdirs = set(sub_sub_dirs[lang])
-            unexpected_subdirs = subdirs - expected_subdirs
+        if language in SUB_DIRECTORIES:
+            # Validate sub-subdirectories for specific languages
+            expected_subdirs = set(SUB_DIRECTORIES[language])
+            unexpected_subdirs = found_subdirs - expected_subdirs
+            missing_subdirs = expected_subdirs - found_subdirs
 
-            # Check for unexpected sub-subdirectories
             if unexpected_subdirs:
-                errors.append(f"Unexpected sub-subdirectories in '{lang}': {unexpected_subdirs}")
-
-            # Check if any expected sub-subdirectories are missing
-            missing_subdirs = expected_subdirs - subdirs
+                errors.append(f"Unexpected sub-subdirectories in '{language}': {unexpected_subdirs}")
             if missing_subdirs:
-                errors.append(f"Missing sub-subdirectories in '{lang}': {missing_subdirs}")
-
+                errors.append(f"Missing sub-subdirectories in '{language}': {missing_subdirs}")
         else:
-            # Validate data-type subdirectories for languages without sub-subdirectories
-            unexpected_subdirs = subdirs - expected_data_types
+            # Validate data-type subdirectories for other languages
+            unexpected_data_types = found_subdirs - DATA_TYPES
+            if unexpected_data_types:
+                errors.append(f"Unexpected subdirectories in '{language}': {unexpected_data_types}")
 
-            if unexpected_subdirs:
-                errors.append(f"Unexpected subdirectories in '{lang}': {unexpected_subdirs}")
-
-    # Report errors
+    # Report errors or confirm success
     if errors:
         print("Errors found:")
         for error in errors:
             print(f" - {error}")
-        exit(1)  # Exit with a non-zero status to indicate failure
+        exit(1)  # Exit with non-zero status to indicate failure
     else:
         print("All directories are correctly named and organized.")
 
-# Run the validation
-validate_directories()
+if __name__ == "__main__":
+    validate_project_structure()
