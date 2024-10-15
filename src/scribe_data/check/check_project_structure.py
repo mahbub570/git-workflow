@@ -29,6 +29,9 @@ SUB_DIRECTORIES = {
 # Base directory path
 BASE_DIR = "../language_data_extraction"
 
+print(f"Current working directory: {os.getcwd()}")
+print(f"Checking if base directory exists: {BASE_DIR}")
+
 print(f"Checking if base directory exists: {BASE_DIR}")
 
 def validate_project_structure():
