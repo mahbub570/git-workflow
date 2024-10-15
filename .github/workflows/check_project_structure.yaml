@@ -1,26 +1,25 @@
-name: Check Project Structure
+name: Structure Check
 
-on:
-  push:
-    branches: [master]
-  pull_request:
-    branches: [master]
-    types: [opened, reopened, synchronize]
+on: [push, pull_request]
 
 jobs:
   structure-check:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout the code
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Activate virtualenv
-      run: |
-        . .venv/bin/activate
-        echo PATH=$PATH >> $GITHUB_ENV
+    - name: Set working directory
+      run: cd src/scribe_data/check
 
-    # Step 3: Run the structure validation script directly
+    - name: Debugging - List contents of src/scribe_data
+      run: ls -R ../
+
     - name: Run check_project_structure.py
-      run: python src/scribe_data/check/check_project_structure.py
+      run: python check_project_structure.py
+
+    - name: Post-run status
+      if: failure()
+      run: echo "Check failed. Please fix the errors."
+ 
