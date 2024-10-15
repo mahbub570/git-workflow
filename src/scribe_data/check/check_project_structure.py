@@ -30,9 +30,6 @@ SUB_DIRECTORIES = {
 BASE_DIR = "../language_data_extraction"
 
 print(f"Current working directory: {os.getcwd()}")
-print(f"Checking if base directory exists: {BASE_DIR}")
-
-print(f"Checking if base directory exists: {BASE_DIR}")
 
 def validate_project_structure():
     """Validate that all directories follow the expected project structure and check for unexpected files and directories."""
