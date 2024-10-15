@@ -4,8 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
-    branches:
-      - master
+    branches: [master]
     types: [opened, reopened, synchronize]
 
 jobs:
@@ -23,14 +22,6 @@ jobs:
       with:
         python-version: '3.x'
 
-    # Step 3: Install dependencies (if needed)
-    - name: Install dependencies
-      run: |
-        python -m venv venv
-        source venv/bin/activate
-
-    # Step 4: Run the structure validation script
+    # Step 3: Run the structure validation script directly
     - name: Run check_project_structure.py
-      run: |
-        source venv/bin/activate
-        python check_project_structure.py
+      run: python check_project_structure.py
