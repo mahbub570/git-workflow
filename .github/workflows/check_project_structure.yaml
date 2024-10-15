@@ -24,4 +24,4 @@ jobs:
 
     # Step 3: Run the structure validation script directly
     - name: Run check_project_structure.py
-      run: python check_project_structure.py
+      run: python src/scribe_data/check/check_project_structure.py
