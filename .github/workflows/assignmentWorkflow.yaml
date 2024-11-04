@@ -44,9 +44,27 @@ jobs:
             }
           }
 
+          async function isAuthorizedUser(username) {
+            // Get authorized users from secrets
+            const authorizedUsers = process.env.AUTHORIZED_USERS?.split(',').map(u => u.trim().toLowerCase()) || [];
+            return authorizedUsers.includes(username.toLowerCase());
+          }
+
           const issueNumber = context.payload.issue.number;
           const commentBody = context.payload.comment.body;
           const commentAuthor = context.payload.comment.user.login;
+          
+          // First check if the comment author is authorized
+          if (!await isAuthorizedUser(commentAuthor)) {
+            console.log(`Unauthorized assignment attempt by ${commentAuthor}`);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `❌ @${commentAuthor}: Only maintainers can assign issues`
+            });
+            return;
+          }
           
           // Parse the assign command
           const assignRegex = /^\/assign\s+(@[\w-]+\s*)+$/m;
@@ -149,3 +167,5 @@ jobs:
               }
             }
           }
+      env:
+        AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
