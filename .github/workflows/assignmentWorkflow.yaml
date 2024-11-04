@@ -1,128 +1,36 @@
-name: Issue Assignment Workflow
-
+name: Auto-Assign
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  assign_issue:
+  assign-users:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      contents: read
-    
     steps:
-    - name: Assign Issue
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.AUTHORIZED_USERS }}  # Ensure to set the personal access token in repository secrets
-        script: |
-          async function checkUserExists(username) {
-            try {
-              await github.rest.users.getByUsername({ username });
-              return true;
-            } catch (error) {
-              console.log(`User existence check failed for ${username}:`, error);
-              if (error.status === 404) {
-                return false;
-              }
-              throw error;
-            }
-          }
+      - name: Parse and Assign Users
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const authorizedUsers = process.env.ASSIGNABLE_USERS.split(',');
+            const commentBody = context.payload.comment.body;
+            const regex = /\/assign\s+@(\w+)/g;
+            let match;
+            const assignees = [];
 
-          const issueNumber = context.payload.issue.number;
-          const commentBody = context.payload.comment.body;
-          const commentAuthor = context.payload.comment.user.login;
-          
-          // Check if user is authorized
-          const authorizedUsers = process.env.AUTHORIZED_USERS?.split(',').map(u => u.trim().toLowerCase()) || [];
-          if (!authorizedUsers.includes(commentAuthor.toLowerCase())) {
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body: `❌ @${commentAuthor}: Only maintainers can assign issues`
-            });
-            return;
-          }
-          
-          // Parse the assign command
-          const assignRegex = /^\/assign\s+(@[\w-]+\s*)+$/m;
-          const match = commentBody.match(assignRegex);
-          
-          if (match) {
-            console.log('Assignment command detected:', commentBody);
-            
-            // Extract usernames (removing @ symbol)
-            const assignees = [...commentBody.matchAll(/@([\w-]+)/g)]
-              .map(match => match[1]);
-            
-            console.log('Parsed assignees:', assignees);
-            
+            while ((match = regex.exec(commentBody)) !== null) {
+              const username = match[1];
+              if (authorizedUsers.includes(username)) {
+                assignees.push(username);
+              }
+            }
+
             if (assignees.length > 0) {
-              for (const assignee of assignees) {
-                try {
-                  console.log(`Processing assignment for ${assignee}`);
-                  
-                  // Check if user exists
-                  const userExists = await checkUserExists(assignee);
-                  console.log(`User ${assignee} exists:`, userExists);
-                  
-                  if (!userExists) {
-                    await github.rest.issues.createComment({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber,
-                      body: `❌ Cannot assign to @${assignee}: User does not exist on GitHub`
-                    });
-                    continue;
-                  }
-
-                  // Try to assign the user
-                  console.log(`Attempting to assign ${assignee}`);
-                  try {
-                    await github.rest.issues.addAssignees({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber,
-                      assignees: [assignee]
-                    });
-
-                    // If assignment succeeds, post success message
-                    await github.rest.issues.createComment({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber,
-                      body: `✅ Issue assigned to @${assignee}`
-                    });
-
-                  } catch (assignError) {
-                    console.error(`Assignment error for ${assignee}:`, assignError);
-                    let errorMessage = 'Failed to assign user';
-                    
-                    if (assignError.status === 403) {
-                      errorMessage = 'Insufficient permissions to assign this user';
-                    }
-
-                    await github.rest.issues.createComment({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber,
-                      body: `❌ ${errorMessage}: @${assignee}`
-                    });
-                  }
-
-                } catch (error) {
-                  console.error(`Error processing assignment for ${assignee}:`, error);
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    body: `❌ An error occurred while processing @${assignee}`
-                  });
-                }
-              }
+              await github.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                assignees: assignees
+              });
             }
-          }
-      env:
-        AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
+        env:
+          ASSIGNABLE_USERS: ${{ secrets.ASSIGNABLE_USERS }}
