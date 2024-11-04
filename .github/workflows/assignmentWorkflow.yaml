@@ -15,12 +15,20 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
+          // Debug: Log the entire github.event object
+          console.log('Full github.event:', JSON.stringify(github.event, null, 2));
+          
           // Check if the event contains the expected properties
           if (!github.event || !github.event.issue || !github.event.number) {
             console.error('Invalid event data');
             return;
           }
           
+          // Debug: Log the relevant parts of the event
+          console.log('Issue number:', github.event.number);
+          console.log('Comment body:', github.event.body?.comment?.body ?? '');
+          
+          // Rest of the logic remains the same
           const commentBody = github.event.body?.comment?.body ?? '';
           
           // Check if "/assign" is in a separate line
