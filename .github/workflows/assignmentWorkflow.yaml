@@ -15,7 +15,13 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          const commentBody = github.event.comment.body;
+          // Check if the event contains the expected properties
+          if (!github.event || !github.event.issue || !github.event.number) {
+            console.error('Invalid event data');
+            return;
+          }
+          
+          const commentBody = github.event.body?.comment?.body ?? '';
           
           // Check if "/assign" is in a separate line
           const lines = commentBody.split('\n');
@@ -28,11 +34,11 @@ jobs:
             await github.rest.issues.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: github.event.issue.number,
+              issue_number: github.event.number,
               assignees: [assignee]
             });
             
-            console.log(`Issue ${github.event.issue.number} assigned to ${assignee}`);
+            console.log(`Issue ${github.event.number} assigned to ${assignee}`);
           } else {
             console.log('No valid /assign found in the comment');
           }
