@@ -15,7 +15,7 @@ jobs:
     - name: Assign Issue
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # Changed to use PAT instead of GITHUB_TOKEN
         script: |
           async function checkUserExists(username) {
             try {
@@ -32,31 +32,26 @@ jobs:
 
           async function hasRepoAccess(username) {
             try {
-              const response = await github.rest.repos.checkCollaborator({
+              // Try to get user's repository permissions directly
+              const response = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 username: username
               });
-              return response.status === 204;
+              return true;
             } catch (error) {
               console.log(`Repo access check failed for ${username}:`, error);
               return false;
             }
           }
 
-          async function isAuthorizedUser(username) {
-            // Get authorized users from secrets
-            const authorizedUsers = process.env.AUTHORIZED_USERS?.split(',').map(u => u.trim().toLowerCase()) || [];
-            return authorizedUsers.includes(username.toLowerCase());
-          }
-
           const issueNumber = context.payload.issue.number;
           const commentBody = context.payload.comment.body;
           const commentAuthor = context.payload.comment.user.login;
           
-          // First check if the comment author is authorized
-          if (!await isAuthorizedUser(commentAuthor)) {
-            console.log(`Unauthorized assignment attempt by ${commentAuthor}`);
+          // Check if user is authorized
+          const authorizedUsers = process.env.AUTHORIZED_USERS?.split(',').map(u => u.trim().toLowerCase()) || [];
+          if (!authorizedUsers.includes(commentAuthor.toLowerCase())) {
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -98,70 +93,47 @@ jobs:
                     continue;
                   }
 
-                  // Check if user has repository access
-                  const hasAccess = await hasRepoAccess(assignee);
-                  console.log(`User ${assignee} has repo access:`, hasAccess);
-                  
-                  if (!hasAccess) {
-                    await github.rest.issues.createComment({
+                  // Try to assign the user without checking repo access
+                  console.log(`Attempting to assign ${assignee}`);
+                  try {
+                    await github.rest.issues.addAssignees({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       issue_number: issueNumber,
-                      body: `❌ Cannot assign to @${assignee}: User needs to be a repository collaborator`
+                      assignees: [assignee]
                     });
-                    continue;
-                  }
 
-                  // Try to assign the user
-                  console.log(`Attempting to assign ${assignee}`);
-                  const assignResponse = await github.rest.issues.addAssignees({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    assignees: [assignee]
-                  });
-                  console.log('Assignment response:', assignResponse);
-
-                  // Verify the assignment
-                  const updatedIssue = await github.rest.issues.get({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber
-                  });
-
-                  const isAssigned = updatedIssue.data.assignees.some(
-                    a => a.login.toLowerCase() === assignee.toLowerCase()
-                  );
-                  console.log(`Assignment verification for ${assignee}:`, isAssigned);
-
-                  if (isAssigned) {
+                    // If assignment succeeds, post success message
                     await github.rest.issues.createComment({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       issue_number: issueNumber,
                       body: `✅ Issue assigned to @${assignee}`
                     });
-                  } else {
-                    throw new Error(`Assignment verification failed for ${assignee}`);
+
+                  } catch (assignError) {
+                    console.error(`Assignment error for ${assignee}:`, assignError);
+                    let errorMessage = 'Failed to assign user';
+                    
+                    if (assignError.status === 403) {
+                      errorMessage = 'Insufficient permissions to assign this user';
+                    }
+
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      body: `❌ ${errorMessage}: @${assignee}`
+                    });
                   }
 
                 } catch (error) {
                   console.error(`Error processing assignment for ${assignee}:`, error);
-                  let errorMessage = 'An unexpected error occurred';
-                  
-                  if (error.status === 403) {
-                    errorMessage = 'Insufficient permissions to assign this user';
-                  } else if (error.status === 404) {
-                    errorMessage = 'User not found';
-                  } else {
-                    errorMessage = error.message || errorMessage;
-                  }
-
                   await github.rest.issues.createComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issueNumber,
-                    body: `❌ Failed to assign @${assignee}: ${errorMessage}`
+                    body: `❌ An error occurred while processing @${assignee}`
                   });
                 }
               }
