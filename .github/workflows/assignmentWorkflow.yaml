@@ -15,21 +15,31 @@ jobs:
       uses: actions/github-script@v7
       with:
         script: |
-          const commentBody = github.event.comment.body;
-          const validAssignees = process.env.VALID_ASSIGNEES.split(','); // Load valid users from secrets
+          // Debugging: Log the entire github.event to inspect the structure
+          console.log('Full github.event:', JSON.stringify(github.event, null, 2));
+
+          // Validate that `comment` and `issue` exist in `github.event`
+          if (!github.event.comment || !github.event.issue) {
+            console.error('Expected properties are missing in github.event');
+            return;
+          }
           
-          // Regex to match the command format /assign @username
+          const commentBody = github.event.comment.body;
+          const validAssignees = process.env.VALID_ASSIGNEES.split(',');
+
+          // Regex to match the command format `/assign @username`
           const assignRegex = /\/assign\s+(@[\w-]+)/g;
           let match;
           const assignees = [];
 
+          // Collect valid assignees based on the command
           while ((match = assignRegex.exec(commentBody)) !== null) {
             const username = match[1].replace('@', '');
             if (validAssignees.includes(username)) {
               assignees.push(username);
             }
           }
-          
+
           if (assignees.length > 0) {
             await github.rest.issues.addAssignees({
               owner: context.repo.owner,
