@@ -15,7 +15,7 @@ jobs:
     - name: Assign Issue
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # Changed to use PAT instead of GITHUB_TOKEN
+        github-token: ${{ secrets.AUTHORIZED_USERS }}  # Ensure to set the personal access token in repository secrets
         script: |
           async function checkUserExists(username) {
             try {
@@ -27,21 +27,6 @@ jobs:
                 return false;
               }
               throw error;
-            }
-          }
-
-          async function hasRepoAccess(username) {
-            try {
-              // Try to get user's repository permissions directly
-              const response = await github.rest.repos.getCollaboratorPermissionLevel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                username: username
-              });
-              return true;
-            } catch (error) {
-              console.log(`Repo access check failed for ${username}:`, error);
-              return false;
             }
           }
 
@@ -93,7 +78,7 @@ jobs:
                     continue;
                   }
 
-                  // Try to assign the user without checking repo access
+                  // Try to assign the user
                   console.log(`Attempting to assign ${assignee}`);
                   try {
                     await github.rest.issues.addAssignees({
