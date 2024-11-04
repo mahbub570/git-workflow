@@ -12,41 +12,34 @@ jobs:
     - uses: actions/checkout@v3
       
     - name: Assign Issue
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       with:
         script: |
-          // Debug: Log the entire github.event object
-          console.log('Full github.event:', JSON.stringify(github.event, null, 2));
+          const commentBody = github.event.comment.body;
+          const validAssignees = process.env.VALID_ASSIGNEES.split(','); // Load valid users from secrets
           
-          // Check if the event contains the expected properties
-          if (!github.event || !github.event.issue || !github.event.number) {
-            console.error('Invalid event data');
-            return;
+          // Regex to match the command format /assign @username
+          const assignRegex = /\/assign\s+(@[\w-]+)/g;
+          let match;
+          const assignees = [];
+
+          while ((match = assignRegex.exec(commentBody)) !== null) {
+            const username = match[1].replace('@', '');
+            if (validAssignees.includes(username)) {
+              assignees.push(username);
+            }
           }
           
-          // Debug: Log the relevant parts of the event
-          console.log('Issue number:', github.event.number);
-          console.log('Comment body:', github.event.body?.comment?.body ?? '');
-          
-          // Rest of the logic remains the same
-          const commentBody = github.event.body?.comment?.body ?? '';
-          
-          // Check if "/assign" is in a separate line
-          const lines = commentBody.split('\n');
-          const assignLineIndex = lines.findIndex(line => line.trim() === '/assign');
-          
-          if (assignLineIndex !== -1 && assignLineIndex < lines.length - 1) {
-            const assignee = lines[assignLineIndex + 1].trim();
-            
-            // Assign the issue to the user
-            await github.rest.issues.update({
+          if (assignees.length > 0) {
+            await github.rest.issues.addAssignees({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: github.event.number,
-              assignees: [assignee]
+              issue_number: github.event.issue.number,
+              assignees: assignees
             });
-            
-            console.log(`Issue ${github.event.number} assigned to ${assignee}`);
+            console.log(`Assigned issue ${github.event.issue.number} to ${assignees.join(', ')}`);
           } else {
-            console.log('No valid /assign found in the comment');
+            console.log('No valid assignees found in the comment.');
           }
+      env:
+        VALID_ASSIGNEES: ${{ secrets.VALID_ASSIGNEES }}
