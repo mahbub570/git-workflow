@@ -1,0 +1,39 @@
+name: Issue Assignment Workflow
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  assign_issue:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' # Only run on main branch
+    
+    steps:
+    - uses: actions/checkout@v3
+      
+    - name: Assign Issue
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const commentBody = github.event.comment.body;
+          
+          // Check if "/assign" is in a separate line
+          const lines = commentBody.split('\n');
+          const assignLineIndex = lines.findIndex(line => line.trim() === '/assign');
+          
+          if (assignLineIndex !== -1 && assignLineIndex < lines.length - 1) {
+            const assignee = lines[assignLineIndex + 1].trim();
+            
+            // Assign the issue to the user
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: github.event.issue.number,
+              assignees: [assignee]
+            });
+            
+            console.log(`Issue ${github.event.issue.number} assigned to ${assignee}`);
+          } else {
+            console.log('No valid /assign found in the comment');
+          }
