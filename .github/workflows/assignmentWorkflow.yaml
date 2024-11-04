@@ -22,6 +22,7 @@ jobs:
               await github.rest.users.getByUsername({ username });
               return true;
             } catch (error) {
+              console.log(`User existence check failed for ${username}:`, error);
               if (error.status === 404) {
                 return false;
               }
@@ -38,6 +39,7 @@ jobs:
               });
               return response.status === 204;
             } catch (error) {
+              console.log(`Repo access check failed for ${username}:`, error);
               return false;
             }
           }
@@ -51,15 +53,23 @@ jobs:
           const match = commentBody.match(assignRegex);
           
           if (match) {
+            console.log('Assignment command detected:', commentBody);
+            
             // Extract usernames (removing @ symbol)
             const assignees = [...commentBody.matchAll(/@([\w-]+)/g)]
               .map(match => match[1]);
             
+            console.log('Parsed assignees:', assignees);
+            
             if (assignees.length > 0) {
               for (const assignee of assignees) {
                 try {
+                  console.log(`Processing assignment for ${assignee}`);
+                  
                   // Check if user exists
                   const userExists = await checkUserExists(assignee);
+                  console.log(`User ${assignee} exists:`, userExists);
+                  
                   if (!userExists) {
                     await github.rest.issues.createComment({
                       owner: context.repo.owner,
@@ -72,6 +82,8 @@ jobs:
 
                   // Check if user has repository access
                   const hasAccess = await hasRepoAccess(assignee);
+                  console.log(`User ${assignee} has repo access:`, hasAccess);
+                  
                   if (!hasAccess) {
                     await github.rest.issues.createComment({
                       owner: context.repo.owner,
@@ -83,12 +95,14 @@ jobs:
                   }
 
                   // Try to assign the user
-                  await github.rest.issues.addAssignees({
+                  console.log(`Attempting to assign ${assignee}`);
+                  const assignResponse = await github.rest.issues.addAssignees({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issueNumber,
                     assignees: [assignee]
                   });
+                  console.log('Assignment response:', assignResponse);
 
                   // Verify the assignment
                   const updatedIssue = await github.rest.issues.get({
@@ -100,16 +114,17 @@ jobs:
                   const isAssigned = updatedIssue.data.assignees.some(
                     a => a.login.toLowerCase() === assignee.toLowerCase()
                   );
+                  console.log(`Assignment verification for ${assignee}:`, isAssigned);
 
                   if (isAssigned) {
                     await github.rest.issues.createComment({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       issue_number: issueNumber,
-                      body: `✅ Successfully assigned to @${assignee}`
+                      body: `✅ Issue assigned to @${assignee}`
                     });
                   } else {
-                    throw new Error('Assignment verification failed');
+                    throw new Error(`Assignment verification failed for ${assignee}`);
                   }
 
                 } catch (error) {
@@ -120,6 +135,8 @@ jobs:
                     errorMessage = 'Insufficient permissions to assign this user';
                   } else if (error.status === 404) {
                     errorMessage = 'User not found';
+                  } else {
+                    errorMessage = error.message || errorMessage;
                   }
 
                   await github.rest.issues.createComment({
