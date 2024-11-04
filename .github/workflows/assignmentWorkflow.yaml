@@ -22,7 +22,6 @@ jobs:
           const commentBody = context.payload.comment.body;
           const commentAuthor = context.payload.comment.user.login;
           
-          // Log for debugging (excluding sensitive data)
           console.log(`Processing comment on issue #${issueNumber}`);
           console.log(`Comment author: ${commentAuthor}`);
           
@@ -49,32 +48,62 @@ jobs:
             
             if (assignees.length > 0) {
               try {
-                // Attempt to assign the issue
-                await github.rest.issues.addAssignees({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  assignees: assignees
-                });
+                // Validate each user exists before attempting to assign
+                const validUsers = [];
+                const invalidUsers = [];
                 
-                // Add confirmation comment
+                for (const username of assignees) {
+                  try {
+                    // Check if user exists
+                    await github.rest.users.getByUsername({
+                      username: username
+                    });
+                    validUsers.push(username);
+                  } catch (error) {
+                    if (error.status === 404) {
+                      invalidUsers.push(username);
+                    } else {
+                      throw error;
+                    }
+                  }
+                }
+                
+                if (validUsers.length > 0) {
+                  // Assign valid users
+                  await github.rest.issues.addAssignees({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    assignees: validUsers
+                  });
+                }
+                
+                // Construct response message
+                let responseMessage = '';
+                if (validUsers.length > 0) {
+                  responseMessage += `✅ Issue assigned to: ${validUsers.map(user => '@' + user).join(', ')}\n`;
+                }
+                if (invalidUsers.length > 0) {
+                  responseMessage += `❌ Invalid username(s): ${invalidUsers.map(user => '@' + user).join(', ')}`;
+                }
+                
+                // Add response comment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issueNumber,
-                  body: `✅ Issue assigned to: ${assignees.map(user => '@' + user).join(', ')}`
+                  body: responseMessage.trim()
                 });
                 
-                console.log(`Successfully assigned issue #${issueNumber} to ${assignees.join(', ')}`);
+                console.log(`Assignment process completed. Valid users: ${validUsers.join(', ')}, Invalid users: ${invalidUsers.join(', ')}`);
               } catch (error) {
-                console.error('Error assigning issue:', error);
+                console.error('Error in assignment process:', error);
                 
-                // Add error comment
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: issueNumber,
-                  body: `❌ Error assigning users. Please make sure all usernames are valid.`
+                  body: `❌ An error occurred while processing the assignment: ${error.message}`
                 });
               }
             }
@@ -83,3 +112,4 @@ jobs:
           }
       env:
         AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
