@@ -11,7 +11,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const authorizedUsers = process.env.ASSIGNABLE_USERS.split(',');
+            const authorizedUsers = process.env.AUTHORIZED_USERS.split(',');
             const commentBody = context.payload.comment.body;
             const regex = /\/assign\s+@(\w+)/g;
             let match;
