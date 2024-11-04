@@ -10,8 +10,18 @@ jobs:
     steps:
       - name: Check if commenter is authorized
         id: auth-check
+        env:
+          AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
         run: |
-          if [[ "${{ secrets.AUTHORIZED_USERS }}" != *"${{ github.event.comment.user.login }}"* ]]; then
+          IFS=',' read -r -a authorized_users <<< "$AUTHORIZED_USERS"
+          user_authorized=false
+          for maintainer in "${authorized_users[@]}"; do
+            if [[ "$maintainer" == "${{ github.event.comment.user.login }}" ]]; then
+              user_authorized=true
+              break
+            fi
+          done
+          if [[ "$user_authorized" == "false" ]]; then
             echo "User is not authorized to assign users."
             exit 1
           fi
