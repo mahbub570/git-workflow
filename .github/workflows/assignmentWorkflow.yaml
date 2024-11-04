@@ -7,16 +7,18 @@ on:
 jobs:
   assign_issue:
     runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
     
     steps:
-    - uses: actions/checkout@v3
-      
     - name: Assign Issue
       uses: actions/github-script@v6
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           // Get the list of authorized users from secrets
-          const authorizedUsers = process.env.AUTHORIZED_USERS.split(',').map(user => user.trim());
+          const authorizedUsers = process.env.AUTHORIZED_USERS?.split(',').map(user => user.trim()) || [];
           
           const issueNumber = context.payload.issue.number;
           const commentBody = context.payload.comment.body;
@@ -48,57 +50,59 @@ jobs:
             
             if (assignees.length > 0) {
               try {
-                // Validate each user exists before attempting to assign
-                const validUsers = [];
-                const invalidUsers = [];
-                
-                for (const username of assignees) {
-                  try {
-                    // Check if user exists
-                    await github.rest.users.getByUsername({
-                      username: username
-                    });
-                    validUsers.push(username);
-                  } catch (error) {
-                    if (error.status === 404) {
-                      invalidUsers.push(username);
-                    } else {
-                      throw error;
-                    }
-                  }
-                }
-                
-                if (validUsers.length > 0) {
-                  // Assign valid users
-                  await github.rest.issues.addAssignees({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: issueNumber,
-                    assignees: validUsers
-                  });
-                }
-                
-                // Construct response message
-                let responseMessage = '';
-                if (validUsers.length > 0) {
-                  responseMessage += `✅ Issue assigned to: ${validUsers.map(user => '@' + user).join(', ')}\n`;
-                }
-                if (invalidUsers.length > 0) {
-                  responseMessage += `❌ Invalid username(s): ${invalidUsers.map(user => '@' + user).join(', ')}`;
-                }
-                
-                // Add response comment
-                await github.rest.issues.createComment({
+                // First verify the current state of the issue
+                const issue = await github.rest.issues.get({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  body: responseMessage.trim()
+                  issue_number: issueNumber
                 });
-                
-                console.log(`Assignment process completed. Valid users: ${validUsers.join(', ')}, Invalid users: ${invalidUsers.join(', ')}`);
+
+                for (const assignee of assignees) {
+                  try {
+                    // Try to assign the user
+                    await github.rest.issues.addAssignees({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      assignees: [assignee]
+                    });
+                    
+                    // Verify the assignment was successful
+                    const updatedIssue = await github.rest.issues.get({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber
+                    });
+                    
+                    const isAssigned = updatedIssue.data.assignees.some(a => a.login.toLowerCase() === assignee.toLowerCase());
+                    
+                    if (isAssigned) {
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issueNumber,
+                        body: `✅ Successfully assigned to @${assignee}`
+                      });
+                    } else {
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issueNumber,
+                        body: `❌ Failed to assign @${assignee}. The user may not exist or may not have the proper permissions.`
+                      });
+                    }
+                  } catch (error) {
+                    console.error(`Error assigning ${assignee}:`, error);
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      body: `❌ Failed to assign @${assignee}: ${error.message}`
+                    });
+                  }
+                }
               } catch (error) {
                 console.error('Error in assignment process:', error);
-                
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -112,4 +116,3 @@ jobs:
           }
       env:
         AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
