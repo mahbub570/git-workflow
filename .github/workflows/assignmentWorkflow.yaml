@@ -8,7 +8,17 @@ jobs:
   auto-assign:
     runs-on: ubuntu-latest
     steps:
+      - name: Check if commenter is authorized
+        id: auth-check
+        run: |
+          if [[ "${{ secrets.AUTHORIZED_USERS }}" != *"${{ github.event.comment.user.login }}"* ]]; then
+            echo "User is not authorized to assign users."
+            exit 1
+          fi
+        shell: bash
+
       - name: Assign Users Automatically
+        if: steps.auth-check.outcome == 'success'
         uses: OWASP-BLT/BLT-Action@v1.1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
