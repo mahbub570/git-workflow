@@ -7,7 +7,6 @@ on:
 jobs:
   assign_issue:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Only run on main branch
     
     steps:
     - uses: actions/checkout@v3
