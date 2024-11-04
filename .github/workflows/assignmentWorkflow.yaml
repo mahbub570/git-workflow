@@ -11,7 +11,7 @@ jobs:
       - name: Check if commenter is authorized
         id: auth-check
         env:
-          AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
+          AUTHORIZED_USERS: ${{ vars.AUTHORIZED_USERS }}
         run: |
           IFS=',' read -r -a authorized_users <<< "$AUTHORIZED_USERS"
           user_authorized=false
