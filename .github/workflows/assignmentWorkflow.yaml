@@ -17,27 +17,34 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          // Get the list of authorized users from secrets
-          const authorizedUsers = process.env.AUTHORIZED_USERS?.split(',').map(user => user.trim()) || [];
-          
+          async function checkUserExists(username) {
+            try {
+              await github.rest.users.getByUsername({ username });
+              return true;
+            } catch (error) {
+              if (error.status === 404) {
+                return false;
+              }
+              throw error;
+            }
+          }
+
+          async function hasRepoAccess(username) {
+            try {
+              const response = await github.rest.repos.checkCollaborator({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                username: username
+              });
+              return response.status === 204;
+            } catch (error) {
+              return false;
+            }
+          }
+
           const issueNumber = context.payload.issue.number;
           const commentBody = context.payload.comment.body;
           const commentAuthor = context.payload.comment.user.login;
-          
-          console.log(`Processing comment on issue #${issueNumber}`);
-          console.log(`Comment author: ${commentAuthor}`);
-          
-          // Check if the comment author is authorized
-          if (!authorizedUsers.includes(commentAuthor)) {
-            console.log(`Unauthorized user ${commentAuthor} attempted to use assignment command`);
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issueNumber,
-              body: `@${commentAuthor} You are not authorized to assign issues.`
-            });
-            return;
-          }
           
           // Parse the assign command
           const assignRegex = /^\/assign\s+(@[\w-]+\s*)+$/m;
@@ -49,70 +56,79 @@ jobs:
               .map(match => match[1]);
             
             if (assignees.length > 0) {
-              try {
-                // First verify the current state of the issue
-                const issue = await github.rest.issues.get({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber
-                });
-
-                for (const assignee of assignees) {
-                  try {
-                    // Try to assign the user
-                    await github.rest.issues.addAssignees({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber,
-                      assignees: [assignee]
-                    });
-                    
-                    // Verify the assignment was successful
-                    const updatedIssue = await github.rest.issues.get({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      issue_number: issueNumber
-                    });
-                    
-                    const isAssigned = updatedIssue.data.assignees.some(a => a.login.toLowerCase() === assignee.toLowerCase());
-                    
-                    if (isAssigned) {
-                      await github.rest.issues.createComment({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: issueNumber,
-                        body: `✅ Successfully assigned to @${assignee}`
-                      });
-                    } else {
-                      await github.rest.issues.createComment({
-                        owner: context.repo.owner,
-                        repo: context.repo.repo,
-                        issue_number: issueNumber,
-                        body: `❌ Failed to assign @${assignee}. The user may not exist or may not have the proper permissions.`
-                      });
-                    }
-                  } catch (error) {
-                    console.error(`Error assigning ${assignee}:`, error);
+              for (const assignee of assignees) {
+                try {
+                  // Check if user exists
+                  const userExists = await checkUserExists(assignee);
+                  if (!userExists) {
                     await github.rest.issues.createComment({
                       owner: context.repo.owner,
                       repo: context.repo.repo,
                       issue_number: issueNumber,
-                      body: `❌ Failed to assign @${assignee}: ${error.message}`
+                      body: `❌ Cannot assign to @${assignee}: User does not exist on GitHub`
                     });
+                    continue;
                   }
+
+                  // Check if user has repository access
+                  const hasAccess = await hasRepoAccess(assignee);
+                  if (!hasAccess) {
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      body: `❌ Cannot assign to @${assignee}: User needs to be a repository collaborator`
+                    });
+                    continue;
+                  }
+
+                  // Try to assign the user
+                  await github.rest.issues.addAssignees({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    assignees: [assignee]
+                  });
+
+                  // Verify the assignment
+                  const updatedIssue = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber
+                  });
+
+                  const isAssigned = updatedIssue.data.assignees.some(
+                    a => a.login.toLowerCase() === assignee.toLowerCase()
+                  );
+
+                  if (isAssigned) {
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      body: `✅ Successfully assigned to @${assignee}`
+                    });
+                  } else {
+                    throw new Error('Assignment verification failed');
+                  }
+
+                } catch (error) {
+                  console.error(`Error processing assignment for ${assignee}:`, error);
+                  let errorMessage = 'An unexpected error occurred';
+                  
+                  if (error.status === 403) {
+                    errorMessage = 'Insufficient permissions to assign this user';
+                  } else if (error.status === 404) {
+                    errorMessage = 'User not found';
+                  }
+
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    body: `❌ Failed to assign @${assignee}: ${errorMessage}`
+                  });
                 }
-              } catch (error) {
-                console.error('Error in assignment process:', error);
-                await github.rest.issues.createComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: issueNumber,
-                  body: `❌ An error occurred while processing the assignment: ${error.message}`
-                });
               }
             }
-          } else {
-            console.log('No valid /assign command found');
           }
-      env:
-        AUTHORIZED_USERS: ${{ secrets.AUTHORIZED_USERS }}
