@@ -47,7 +47,7 @@ jobs:
 
       - name: Add Content to Etherpad Without API
         env:
-            TEMPLATE_PATH: 'template.html'   
+            TEMPLATE_PATH: './src/scribe_data/check/template.html'   
         run: |
             pip install requests
             python - <<EOF
