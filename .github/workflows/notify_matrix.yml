@@ -46,14 +46,11 @@ jobs:
           fi
 
       - name: Add Content to Etherpad Without API
-        env:
-            TEMPLATE_PATH: './src/scribe_data/check/template.html'   
         run: |
             pip install requests
             python - <<EOF
             import requests
             import os
-            from string import Template
         
             # Fetch environment variables
             next_bi_weekly_date = os.environ.get('NEXT_BI_WEEKLY_DATE')
@@ -63,17 +60,45 @@ jobs:
             # Construct the Etherpad import URL
             url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
         
-            # Read the template content from the file
-            template_path = os.environ.get('TEMPLATE_PATH', './template.html')
-            with open(template_path, 'r', encoding='utf-8') as file:
-                template_content = file.read()
+            # Prepare the content with HTML formatting and dynamic data
+            content = f'''<html><body>
+            <h1>Scribe Dev Sync {next_bi_weekly_date}</h1>
         
-            # Substitute variables in the template
-            template = Template(template_content)
-            content = template.safe_substitute(
-                next_bi_weekly_date=next_bi_weekly_date,
-                next_epoch_time=next_epoch_time
-            )
+            <p>Pad directory: <a href="https://etherpad.wikimedia.org/p/scribe-dev-sync">https://etherpad.wikimedia.org/p/scribe-dev-sync</a><br>
+            ZoneStamp: <a href="https://zonestamp.toolforge.org/">https://zonestamp.toolforge.org/</a></p>
+        
+            <h2>Participants (please list yourself if you'd like to)</h2>
+            <ul>
+              <li>Participant</li>
+            </ul>
+        
+            <h2>Topics</h2>
+            <ul>
+              <li>All: introductions 👋</li>
+              <li>All: does anyone want a calendar invite to the dev sync? If so, send them out :)</li>
+              <li>Recap done by: NAME</li>
+              <li>Go through the project board: <a href="https://github.com/orgs/scribe-org/projects/1">Project Board</a></li>
+              <li>Name:</li>
+            </ul>
+        
+            <h2>Tasks (strikethrough ^/⌘ + 5 to mark as complete)</h2>
+            <ul>
+              <li>Task</li>
+            </ul>
+        
+            <h2>Recap</h2>
+        
+            <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️</p>
+        
+            <ul>
+              <li><a href="https://etherpad.wikimedia.org/p/scribe-dev-sync-{next_bi_weekly_date}">Pad for this week</a></li>
+              <li>Note</li>
+            </ul>
+        
+            <p>The next dev sync will be <a href="https://zonestamp.toolforge.org/{next_epoch_time}">Saturday {next_bi_weekly_date} at 15:00 UTC</a>.</p>
+        
+            <p>Nice outro 😊</p>
+            </body></html>'''
         
             # Prepare the file to upload
             files = {
@@ -93,7 +118,6 @@ jobs:
                 print(response.text)
             EOF
         
-
       - name: Send message to Matrix channel
         id: matrix-chat-message
         uses: fadenb/matrix-chat-message@v0.0.6
