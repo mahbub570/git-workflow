@@ -64,31 +64,31 @@ jobs:
           echo "Next bi-weekly date: ${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
           echo "Next EPOCH time (for sync): $next_epoch_time" >> $GITHUB_STEP_SUMMARY
 
-      - name: Add Content to Etherpad
+      - name: Add Content to Etherpad Without API
         env:
           NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
-          ETHERPAD_URL: "https://etherpad.wikimedia.org/p/OBfYAQgSt7RShC_KPFZV"
+          ETHERPAD_URL: "https://etherpad.wikimedia.org/p/asip-${{ env.NEXT_BI_WEEKLY_DATE }}"
         run: |
-          pip install etherpad_lite
+          pip install requests
           python - <<EOF
-          from etherpad_lite import EtherpadLiteClient
+          import requests
           import os
-
-          client = EtherpadLiteClient(base_params={'apikey': os.environ.get('ETHERPAD_API_KEY')}, base_url=os.environ.get('ETHERPAD_URL') + '/api')
-
-          pad_name = f"scribe-dev-sync-{os.environ.get('NEXT_BI_WEEKLY_DATE')}"
+      
+          pad_url = os.environ.get('ETHERPAD_URL')
           content = "Your initial pad content goes here."
-
-          # Create pad if it doesn't exist
-          try:
-              client.createPad(padID=pad_name, text=content)
-          except Exception as e:
-              print(f"Pad may already exist: {e}")
-              # Optionally append content to existing pad
-              existing_content = client.getText(padID=pad_name)['text']
-              new_content = existing_content + "\n\n" + content
-              client.setText(padID=pad_name, text=new_content)
+      
+          response = requests.post(
+              pad_url,
+              data={'data': content}
+          )
+          print(f"Response status code: {pad_url}")
+      
+          if response.status_code == 200:
+              print("Content added to the pad successfully.")
+          else:
+              print(f"Failed to add content to the pad. Status code: {response.status_code}")
           EOF
+        
 
       - name: Send message to Matrix channel
         id: matrix-chat-message
