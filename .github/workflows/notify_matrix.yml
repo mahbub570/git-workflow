@@ -78,7 +78,7 @@ jobs:
             next_epoch_time=os.environ.get('NEXT_EPOCH_TIME')
             next_bi_weekly_date=os.environ.get('NEXT_BI_WEEKLY_DATE')
  
-            url = f'''https://etherpad.wikimedia.org/p/axif-{next_bi_weekly_date}/import'
+            url = f"""https://etherpad.wikimedia.org/p/axif-{next_bi_weekly_date}/import'
             print(url)            
             # The text you want to add to the pad
             content = f'''<html><body>
@@ -120,7 +120,7 @@ jobs:
 
             <p>Nice outro 😊</p>
 
-            </body></html>'''
+            </body></html>"""
         
             # Prepare the file to upload
             files = {
