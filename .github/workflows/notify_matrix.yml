@@ -67,21 +67,26 @@ jobs:
       - name: Add Content to Etherpad Without API
         env:
             NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
-            PAD_NAME: "asif-${{ env.NEXT_BI_WEEKLY_DATE }}"
+            # PAD_NAME: "asif-${{ env.NEXT_BI_WEEKLY_DATE }}"
+            NEXT_EPOCH_TIME: ${{ env.NEXT_EPOCH_TIME }}
         run: |
             pip install requests
             python - <<EOF
             import requests
             import os
-        
-            pad_name = os.environ.get('PAD_NAME')
-            url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
+
+            next_epoch_time=os.environ.get('NEXT_EPOCH_TIME')
+            next_bi_weekly_date=os.environ.get('NEXT_BI_WEEKLY_DATE')
+ 
+            url = f'https://etherpad.wikimedia.org/p/axif-{pad_name}/import'
             print(url)            
             # The text you want to add to the pad
-            content = '''<html><body>
-            # 📝 **Activist Dev Sync Meeting - {pad_name}**
+            content = f'''<html><body>
+            <h1>Scribe Dev Sync {{ next_bi_weekly_date }}</h1>
         
-            ## Agenda
+            <p>Pad directory: <a href="https://etherpad.wikimedia.org/p/scribe-dev-sync">https://etherpad.wikimedia.org/p/scribe-dev-sync</a><br>
+            ZoneStamp: <a href="https://zonestamp.toolforge.org/">https://zonestamp.toolforge.org/{{ next_epoch_time }}</a></p>
+ 
         
             <h2>Participants (please list yourself if you'd like to)</h2>
             <ul>
@@ -105,6 +110,15 @@ jobs:
             <h2>Recap</h2>
 
             <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️</p>
+
+            <ul>
+              <li><a href="https://etherpad.wikimedia.org/p/scribe-dev-sync-{{ next_bi_weekly_date }}">Pad for this week</a></li>
+              <li>Note</li>
+            </ul>
+
+            <p>The next dev sync will be <a href="https://zonestamp.toolforge.org/{{ next_epoch_time }}">Saturday {{ next_bi_weekly_date }} at 15:00 UTC</a>.</p>
+
+            <p>Nice outro 😊</p>
 
             </body></html>'''
         
