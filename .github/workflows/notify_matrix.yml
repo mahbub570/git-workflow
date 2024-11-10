@@ -56,10 +56,10 @@ jobs:
             next_bi_weekly_date = os.environ.get('NEXT_BI_WEEKLY_DATE')
             next_epoch_time = os.environ.get('NEXT_EPOCH_TIME')
             pad_name = f'asif-{next_bi_weekly_date}'
-        
+            
             # Construct the Etherpad import URL
             url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
-        
+            print("pod_name",url)
             # Prepare the content with HTML formatting and dynamic data
             content = f'''<html><body>
             <h1>Scribe Dev Sync {next_bi_weekly_date}</h1>
