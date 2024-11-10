@@ -67,7 +67,7 @@ jobs:
       - name: Add Content to Etherpad Without API
         env:
             NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
-            PAD_NAME: "activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}"
+            PAD_NAME: "asif-${{ env.NEXT_BI_WEEKLY_DATE }}"
         run: |
             pip install requests
             python - <<EOF
@@ -76,7 +76,7 @@ jobs:
         
             pad_name = os.environ.get('PAD_NAME')
             url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
-            
+            print(url)            
             # The text you want to add to the pad
             content = '''<html><body>
             # 📝 **Activist Dev Sync Meeting - {pad_name}**
