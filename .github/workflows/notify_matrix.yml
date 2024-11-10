@@ -130,7 +130,7 @@ jobs:
             response = requests.post(url, files=files)
         
             if response.status_code == 200:
-                print(f"Content imported successfully into pad '{pad_name}'.")
+                print(f"Content imported successfully into pad '{next_bi_weekly_date}'.")
             elif response.status_code == 302:
                 print(f"Content imported successfully, redirected to the pad.")
             elif response.status_code == 413:
