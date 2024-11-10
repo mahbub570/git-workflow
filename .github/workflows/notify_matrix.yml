@@ -66,28 +66,53 @@ jobs:
 
       - name: Add Content to Etherpad Without API
         env:
-          NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
-          ETHERPAD_URL: "https://etherpad.wikimedia.org/p/asip-${{ env.NEXT_BI_WEEKLY_DATE }}"
+            NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
+            PAD_NAME: "activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}"
         run: |
-          pip install requests
-          python - <<EOF
-          import requests
-          import os
-      
-          pad_url = os.environ.get('ETHERPAD_URL')
-          content = "Your initial pad content goes here."
-      
-          response = requests.post(
-              pad_url,
-              data={'data': content}
-          )
-          print(f"Response status code: {pad_url}")
-      
-          if response.status_code == 200:
-              print("Content added to the pad successfully.")
-          else:
-              print(f"Failed to add content to the pad. Status code: {response.status_code}")
-          EOF
+            pip install requests
+            python - <<EOF
+            import requests
+            import os
+        
+            pad_name = os.environ.get('PAD_NAME')
+            url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
+            
+            # The text you want to add to the pad
+            content = '''<html><body>
+            # 📝 **Activist Dev Sync Meeting - {pad_name}**
+        
+            ## Agenda
+        
+            - **Introductions**
+            - **Project Updates**
+            - **Discussion Topics**
+              - Topic 1
+              - Topic 2
+            - **Action Items**
+        
+            ## Notes
+        
+            <!-- Add your notes here -->
+        
+            </body></html>'''
+        
+            # Prepare the file to upload
+            files = {
+                'file': ('import.html', content.encode('utf-8'), 'text/html'),
+            }
+        
+            response = requests.post(url, files=files)
+        
+            if response.status_code == 200:
+                print(f"Content imported successfully into pad '{pad_name}'.")
+            elif response.status_code == 302:
+                print(f"Content imported successfully, redirected to the pad.")
+            elif response.status_code == 413:
+                print("The file is too large to upload.")
+            else:
+                print(f"Failed to import content. Status code: {response.status_code}")
+                print(response.text)
+            EOF
         
 
       - name: Send message to Matrix channel
