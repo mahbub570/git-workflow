@@ -132,7 +132,7 @@ jobs:
             <br> <!-- Added space -->
         
             <h2>Recap</h2>
-        
+             <br> <!-- Added space -->
             <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️</p>
         
             <ul>
@@ -141,7 +141,7 @@ jobs:
             </ul>
             <br> <!-- Added space -->
         
-                <p>The next dev sync will be https://zonestamp.toolforge.org/{next_next_epoch_time} Saturday the {next_next_bi_weekly_date} at 15:00 UTC</a>.</p>
+                <p>The next dev sync will be [Saturday the {next_next_bi_weekly_date} at 15:00 UTC]https://zonestamp.toolforge.org/{next_next_epoch_time} </a>.</p>
 
             <p>Nice outro 😊</p>
         
