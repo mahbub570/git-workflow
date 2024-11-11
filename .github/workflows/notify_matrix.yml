@@ -118,9 +118,13 @@ jobs:
             <h2>Topics</h2>
             <ul>
               <li>All: introductions 👋</li>
-              <li>All: does anyone want a calendar invite to the dev sync? If so, send them out :)</li>
+              <li>All: does anyone want a calendar invite to the dev sync? If so, send them out :)
+                  <ul>
+                      <li>If you would like an invite, please message Andrew on Matrix/Element</li>
+                  </ul>
+                </li>
               <li>Recap done by: NAME</li>
-              <li>Go through the project board: [Project Board]https://github.com/orgs/scribe-org/projects/1</a></li>
+              <li>Go through the project board: https://github.com/orgs/scribe-org/projects/1</a></li>
               <li>Name:</li>
             </ul>
             <br> <!-- Added space -->
@@ -141,7 +145,7 @@ jobs:
             </ul>
             <br> <!-- Added space -->
         
-                <p>The next dev sync will be [Saturday the {next_next_bi_weekly_date} at 15:00 UTC]https://zonestamp.toolforge.org/{next_next_epoch_time} </a>.</p>
+                <p>The next dev sync will be [Saturday the {next_next_bi_weekly_date} at 15:00 UTC] https://zonestamp.toolforge.org/{next_next_epoch_time} </a>.</p>
 
             <p>Nice outro 😊</p>
         
