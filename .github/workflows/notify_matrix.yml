@@ -130,12 +130,12 @@ jobs:
             <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️</p>
         
             <ul>
-              <li><a href="https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}">Pad for this week</a></li>
+              <li>[Pad for this week] https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }} </a></li>
               <li>Note</li>
             </ul>
             <br> <!-- Added space -->
         
-            <p>The next dev sync will be <a href="https://zonestamp.toolforge.org/${{ env.FUTURE_EPOCH_TIME }}">Saturday ${{ env.FUTURE_DATE }} at 15:00 UTC</a>.</p>
+            <p>The next [dev sync]https://zonestamp.toolforge.org/${{ env.FUTURE_EPOCH_TIME }} will be Saturday ${{ env.FUTURE_DATE }} at 15:00 UTC</a>.</p>
         
             <p>Nice outro 😊</p>
         
