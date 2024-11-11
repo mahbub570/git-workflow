@@ -96,6 +96,7 @@ jobs:
             pad_name = f'axif-{next_bi_weekly_date}'
             url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
             print(f"Importing content to: https://etherpad.wikimedia.org/p/{pad_name}")
+            print(next_next_epoch_time)
         
             # The text you want to add to the pad
             content = f"""<html><body>
