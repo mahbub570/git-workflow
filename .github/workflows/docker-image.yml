@@ -28,6 +28,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Refresh Docker Hub token
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+
       - name: Extract metadata for the Docker image
         id: meta
         uses: docker/metadata-action@v4
