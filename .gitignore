@@ -1,2 +1,4 @@
 *.json.bz2
 *.json
+
+venv/
