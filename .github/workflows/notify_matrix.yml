@@ -2,11 +2,11 @@ name: Notify Matrix Channel of Test Message
 
 on:
   schedule:
-    - cron: '05 3 * * 4'  # Every Wednesday at 14:00 UTC 
+    - cron: '0 14 * * 4'  # Every Wednesday at 14:00 UTC 
   workflow_dispatch:  # Allows manual triggering
 
 env:
-  FIRST_RUN_DATE: "2024-11-02"  # Set the first Wednesday you want this to run
+  FIRST_RUN_DATE: "2024-11-13"  # Set the first Wednesday you want this to run
 
 jobs:
   weekindex:
@@ -28,12 +28,12 @@ jobs:
 
           # Calculate next bi-weekly date
           if [ "$weekindex" -eq 0 ]; then
-            next_bi_weekly_date=$(date -d "$current_date + 14 days" +%Y-%m-%d)
-            next_next_bi_weekly_date=$(date -d "$current_date + 28 days" +%Y-%m-%d)
+            next_bi_weekly_date=$(date -d "$current_date + 3 days" +%Y-%m-%d)
+            next_next_bi_weekly_date=$(date -d "$current_date + 17 days" +%Y-%m-%d)
 
           else
-            next_bi_weekly_date=$(date -d "$current_date + 7 days" +%Y-%m-%d)
-            next_next_bi_weekly_date=$(date -d "$current_date + 21 days" +%Y-%m-%d)
+            next_bi_weekly_date=$(date -d "$current_date + 10 days" +%Y-%m-%d)
+            next_next_bi_weekly_date=$(date -d "$current_date + 24 days" +%Y-%m-%d)
 
           fi
 
