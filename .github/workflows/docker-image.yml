@@ -27,4 +27,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: asif570/testing-workflow:latest  # Use your actual username here
+          tags: asif570/testing-workflow:version0asif  # Use your actual username here
