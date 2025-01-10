@@ -37,10 +37,11 @@ jobs:
         git push origin feature-branch
 
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v4
+      uses: repo-sync/pull-request@v2
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        base: master # Change this to 'master'
-        head: feature-branch
-        title: "Automated PR: Title"
-        body: "This PR is created automatically by the GitHub Action."
+        destination_branch: main
+        pr_title: "Automated PR: Title"
+        pr_template: ".github/PULL_REQUEST_TEMPLATE.md"
+        pr_reviewer: "axif0"
+        pr_draft: true
+
