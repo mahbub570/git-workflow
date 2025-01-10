@@ -1,46 +1,37 @@
-name: Create Pull Request to Master
+name: CI
 
 on:
   push:
-    branches:
-      - feature-branch  # Trigger when changes are pushed to the 'feature-branch'
+    branches: [ "master" ]
+  schedule:
+    - cron: '30 2 * * *'  # Run once per day
+  workflow_dispatch:
 
 jobs:
-  create_pr:
+  unciv-lint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Git
-        run: |
-          git config --global user.name "axif"
-          git config --global user.email "muhamadasif570@gmail.com"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 17
 
-      - name: Create a new branch from master
-        run: |
-          git fetch origin
-          git checkout master
-          git pull origin master
-          git checkout -b feature-branch
-
-      - name: Make changes (or copy new code)
-        run: |
-          # Add your custom script here to make changes
-          echo "Some change" >> file.txt
-
-      - name: Commit changes
-        run: |
-          git add .
-          git commit -m "Commit message"
-          git push origin feature-branch
+      - name: Remove Unciv executable
+        run: rm Unciv.jar
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: master
-          head: feature-branch
-          title: "Automated PR: Title"
-          body: "This PR is created automatically by the GitHub Action."
+          commit-message: Autoupdate
+
+      # Demo Test: Add text file to the repository and push to master
+      - name: Create demo test file and commit
+        run: |
+          echo "This is a demo test for the GitHub Action!" > demo_test.txt
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@github.com"
+          git add demo_test.txt
+          git commit -m "Add demo test file"
+          git push origin master
