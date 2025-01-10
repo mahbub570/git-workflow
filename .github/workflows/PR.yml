@@ -12,18 +12,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
- 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          commit-message: Autoupdate
 
-      # Demo Test: Add text file to the repository and push to master
+      # Demo Test: Add text file to the repository and commit to a new branch
       - name: Create demo test file and commit
         run: |
           echo "This is a demo test for the GitHub Action!" > demo_test.txt
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
+          git checkout -b demo-test-branch
           git add demo_test.txt
           git commit -m "Add demo test file"
-          git push origin master
+          git push origin demo-test-branch
+
+      # Create Pull Request from the new branch to master
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "Add demo test file"
+          body: "This is a test PR with a demo file"
+          head: "demo-test-branch"
+          base: "master"
