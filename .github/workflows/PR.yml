@@ -3,7 +3,7 @@ name: Create Pull Request to Master
 on:
   push:
     branches:
-      - master  # Trigger when changes are pushed to the 'master' branch
+      - feature-branch  # Trigger when changes are pushed to the 'feature-branch'
 
 jobs:
   create_pr:
@@ -41,6 +41,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: master
-          branch: feature-branch
+          head: feature-branch
           title: "Automated PR: Title"
           body: "This PR is created automatically by the GitHub Action."
