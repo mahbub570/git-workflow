@@ -18,11 +18,11 @@ jobs:
         git config --global user.name "axif"
         git config --global user.email "muhamadasif570@gmail.com"
 
-    - name: Create a new branch from main
+    - name: Create a new branch from master
       run: |
         git fetch origin
-        git checkout main
-        git pull origin main
+        git checkout master # Change this to 'master'
+        git pull origin master # Change this to 'master'
         git checkout -b feature-branch
 
     - name: Make changes (or copy new code)
@@ -40,7 +40,7 @@ jobs:
       uses: peter-evans/create-pull-request@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        base: main
+        base: master # Change this to 'master'
         head: feature-branch
         title: "Automated PR: Title"
         body: "This PR is created automatically by the GitHub Action."
