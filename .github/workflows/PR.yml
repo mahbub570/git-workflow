@@ -28,7 +28,7 @@ jobs:
       - name: Make changes (or copy new code)
         run: |
           # Add your custom script here to make changes
-          echo "Some change" >> file.txt
+          echo "Some mae change" >> frgeile.txt
 
       - name: Commit changes
         run: |
