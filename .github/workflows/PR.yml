@@ -41,6 +41,6 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
-          head: feature-branch
+          branch: feature-branch
           title: "Automated PR: Title"
           body: "This PR is created automatically by the GitHub Action."
