@@ -1,0 +1,35 @@
+name: Create Pull Request to Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create temporary branch
+        run: |
+          git checkout -b pr-temp-branch
+
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "Automated PR creation"
+
+      - name: Push temporary branch
+        run: |
+          git push origin pr-temp-branch
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: "[Auto] Automated PR from GitHub Actions"
+          body: "This pull request was created automatically by a GitHub Action."
+          base: main
+          head: pr-temp-branch
