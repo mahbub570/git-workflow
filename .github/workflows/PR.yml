@@ -22,6 +22,10 @@ jobs:
           git checkout -b demo-test-branch
           git add demo_test.txt
           git commit -m "Add demo test file"
+          
+          # Check if there is anything to commit
+          git status
+          
           git push origin demo-test-branch
 
       # Create Pull Request from the new branch to master
