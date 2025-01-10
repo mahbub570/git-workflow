@@ -3,33 +3,44 @@ name: Create Pull Request to Main
 on:
   push:
     branches:
-      - main
+      - master # Trigger when changes are pushed to a specific branch (replace with your feature branch)
 
 jobs:
-  create-pr:
+  create_pr:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Check out code
+      uses: actions/checkout@v3
 
-      - name: Create temporary branch
-        run: |
-          git checkout -b pr-temp-branch
+    - name: Set up Git
+      run: |
+        git config --global user.name "axif"
+        git config --global user.email "muhamadasif570@gmail.com"
 
-      - name: Commit changes
-        run: |
-          git add .
-          git commit -m "Automated PR creation"
+    - name: Create a new branch from main
+      run: |
+        git fetch origin
+        git checkout main
+        git pull origin main
+        git checkout -b feature-branch
 
-      - name: Push temporary branch
-        run: |
-          git push origin pr-temp-branch
+    - name: Make changes (or copy new code)
+      run: |
+        # Add your custom script here to make changes
+        echo "Some change" >> file.txt
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: "[Auto] Automated PR from GitHub Actions"
-          body: "This pull request was created automatically by a GitHub Action."
-          base: main
-          head: pr-temp-branch
+    - name: Commit changes
+      run: |
+        git add .
+        git commit -m "Commit message"
+        git push origin feature-branch
+
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        base: main
+        head: feature-branch
+        title: "Automated PR: Title"
+        body: "This PR is created automatically by the GitHub Action."
