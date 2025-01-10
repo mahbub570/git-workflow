@@ -3,45 +3,44 @@ name: Create Pull Request to Main
 on:
   push:
     branches:
-      - master # Trigger when changes are pushed to a specific branch (replace with your feature branch)
+      - master  # Trigger when changes are pushed to the 'master' branch
 
 jobs:
   create_pr:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
-      uses: actions/checkout@v3
+      - name: Check out code
+        uses: actions/checkout@v4
 
-    - name: Set up Git
-      run: |
-        git config --global user.name "axif"
-        git config --global user.email "muhamadasif570@gmail.com"
+      - name: Set up Git
+        run: |
+          git config --global user.name "axif"
+          git config --global user.email "muhamadasif570@gmail.com"
 
-    - name: Create a new branch from master
-      run: |
-        git fetch origin
-        git checkout master # Change this to 'master'
-        git pull origin master # Change this to 'master'
-        git checkout -b feature-branch
+      - name: Create a new branch from master
+        run: |
+          git fetch origin
+          git checkout master
+          git pull origin master
+          git checkout -b feature-branch
 
-    - name: Make changes (or copy new code)
-      run: |
-        # Add your custom script here to make changes
-        echo "Some change" >> file.txt
+      - name: Make changes (or copy new code)
+        run: |
+          # Add your custom script here to make changes
+          echo "Some change" >> file.txt
 
-    - name: Commit changes
-      run: |
-        git add .
-        git commit -m "Commit message"
-        git push origin feature-branch
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "Commit message"
+          git push origin feature-branch
 
-    - name: Create Pull Request
-      uses: repo-sync/pull-request@v2
-      with:
-        destination_branch: main
-        pr_title: "Automated PR: Title"
-        pr_template: ".github/PULL_REQUEST_TEMPLATE.md"
-        pr_reviewer: "axif0"
-        pr_draft: true
-
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          head: feature-branch
+          title: "Automated PR: Title"
+          body: "This PR is created automatically by the GitHub Action."
