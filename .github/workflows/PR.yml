@@ -1,4 +1,4 @@
-name: Create Pull Request to Main
+name: Create Pull Request to Master
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
+          base: master
           branch: feature-branch
           title: "Automated PR: Title"
           body: "This PR is created automatically by the GitHub Action."
