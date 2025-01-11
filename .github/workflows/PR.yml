@@ -1,38 +1,33 @@
-name: CI
-
+name: Create Automated PR
 on:
   push:
-    branches: [ "master" ]
-  schedule:
-    - cron: '30 2 * * *'  # Run once per day
-  workflow_dispatch:
+    branches:
+      - master # Triggers on any branch starting with 'feature/'
 
 jobs:
-  unciv-lint:
+  create-pull-request:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # Demo Test: Add text file to the repository and commit to a new branch
-      - name: Create demo test file and commit
-        run: |
-          echo "This is a demo test for the GitHub Action!" > demo_test.txt
-          git config user.name "GitHub Actions"
-          git config user.email "github-actions@github.com"
-          git checkout -b demo-test-branch
-          git add demo_test.txt
-          git commit -m "Add demo test file"
-          
-          # Check if there is anything to commit
-          git status
-          
-          git push origin demo-test-branch
+      # You might want to add your build/test steps here
+      # - name: Run tests
+      #   run: |
+      #     npm install
+      #     npm test
 
-      # Create Pull Request from the new branch to master
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v5
         with:
-          title: "Add demo test file"
-          body: "This is a test PR with a demo file"
-          head: "demo-test-branch"
-          base: "master"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'Automated PR from feature branch'
+          body: |
+            This PR was automatically created by a GitHub Action.
+            
+            Changes included in this PR:
+            - Please review the changes and provide feedback
+          base: main  # The branch you want to merge into
+          branch: automated-pr  # The branch name for this PR
+          delete-branch: true  # Delete the branch after merging
+          draft: false  # Set to true if you want to create draft PRs
