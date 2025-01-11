@@ -27,7 +27,7 @@ jobs:
             
             Changes included in this PR:
             - Please review the changes and provide feedback
-          base: main  # The branch you want to merge into
+          base: master  # The branch you want to merge into
           branch: automated-pr  # The branch name for this PR
           delete-branch: true  # Delete the branch after merging
           draft: false  # Set to true if you want to create draft PRs
