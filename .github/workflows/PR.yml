@@ -2,7 +2,7 @@ name: Create Automated PR
 on:
   push:
     branches:
-      - feature-branch # Triggers on any branch starting with 'feature/'
+      - gbhj # Triggers on any branch starting with 'feature/'
 
 jobs:
   create-pull-request:
