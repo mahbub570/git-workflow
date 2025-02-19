@@ -1,9 +1,9 @@
-# check_in_bot.yaml
 name: Check in on Issues and PRs
 
 on:
   schedule:
     - cron: "*/6 * * * *" # Runs every 6 minutes
+  workflow_dispatch: # Allows manual triggering
 
 jobs:
   check-in-bot:
@@ -11,13 +11,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Check in on issues and PRs
         uses: andrewtavis/check-in-bot@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          days-inactive: 1
+          days-inactive: 1 # You can adjust this number
           comment-message: |
             Hello to the maintainers and watchers!
 
