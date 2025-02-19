@@ -17,7 +17,7 @@ jobs:
         uses: andrewtavis/check-in-bot@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          days-inactive: 14
+          days-inactive: 1
           comment-message: |
             Hello to the maintainers and watchers!
 
