@@ -9,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run Check in Bot
-        uses: ./.github/actions/check-in-bot
+        uses: axif0/test-check-in-bot@master
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-inactive: '0.01' # 14.4 minutes
