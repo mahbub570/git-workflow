@@ -66,7 +66,7 @@ jobs:
               while True:
                   url = (f"https://api.github.com/repos/{ORG}/{repo}/commits?"
                          f"since={start_date.isoformat()}Z&until={end_date.isoformat()}Z&per_page=100&page={page}")
-                  headers = {"Authorization": f"token ${GITHUB_TOKEN}" ".
+                  headers = {"Authorization": f"token ${GITHUB_TOKEN}"}
                   r = requests.get(url, headers=headers)
                   if r.status_code != 200:
                       print(f"Error fetching commits for {repo}: {r.status_code}")
@@ -108,7 +108,8 @@ jobs:
               # Escape message for GitHub Actions output
               with open("message.txt", "w") as f:
                   f.write(message)
-              print(f"message<<EOF\n{message}\nEOF" >> $GITHUB_OUTPUT)
+              with open("$GITHUB_OUTPUT", "a") as f:
+                  f.write(f"message<<EOF\n{message}\nEOF\n")
 
               # Log to summary
               with open("$GITHUB_STEP_SUMMARY", "a") as f:
