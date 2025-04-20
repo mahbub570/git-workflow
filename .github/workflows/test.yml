@@ -1,0 +1,18 @@
+name: Check Inactive Issues
+on:
+  workflow_dispatch: # Allows manual triggering
+  schedule:
+    - cron: '0 0 * * *' # Optional: Runs daily
+jobs:
+  check-in:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Check in Bot
+        uses: ./.github/actions/check-in-bot
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          days-inactive: '0.01' # 14.4 minutes
+          comment-message: 'This issue has been inactive for 14.4 minutes. Please check in.'
+          bot-username: 'github-actions[bot]' # Adjust if using a custom bot
+          ignore-label: 'ignore-checkin'
