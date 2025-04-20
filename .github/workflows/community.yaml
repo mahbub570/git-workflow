@@ -125,11 +125,6 @@ jobs:
               main()
           EOF
 
-      - name: Store message as output
-        id: store-message
-        run: |
-          echo "message=$(cat message.txt)" >> $GITHUB_OUTPUT
-
   send-message:
     runs-on: ubuntu-latest
     needs: calculate-contributors
