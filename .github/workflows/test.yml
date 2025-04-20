@@ -14,5 +14,5 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-inactive: '0.01' # 14.4 minutes
           comment-message: 'This issue has been inactive for 14.4 minutes. Please check in.'
-          bot-username: 'scribe' # Adjust if using a custom bot
+          bot-username: 'github-actions[bot]' # Adjust if using a custom bot
           ignore-label: 'ignore-checkin'
