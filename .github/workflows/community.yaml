@@ -1,0 +1,143 @@
+name: Community Spotlight Notification
+
+on:
+  schedule:
+    - cron: '0 0 25 * *'  # Runs on the 25th of each month at 00:00 UTC
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  calculate-contributors:
+    runs-on: ubuntu-latest
+    outputs:
+      message: ${{ steps.calculate.outputs.message }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Calculate top contributors
+        id: calculate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<EOF
+          import requests
+          from datetime import datetime
+          from collections import defaultdict
+
+          ORG = "scribe-org"
+
+          # Date range: 25th of last month to 25th of this month
+          today = datetime.today()
+          start_month = today.month - 1 if today.month > 1 else 12
+          start_year = today.year if today.month > 1 else today.year - 1
+          start_date = datetime(start_year, start_month, 25)
+          end_date = datetime(today.year, today.month, 25)
+
+          def get_repos():
+              repos = []
+              page = 1
+              while True:
+                  url = f"https://api.github.com/orgs/{ORG}/repos?per_page=100&page={page}"
+                  headers = {"Authorization": f"token ${GITHUB_TOKEN}"}
+                  r = requests.get(url, headers=headers)
+                  if r.status_code != 200:
+                      print("Error fetching repos:", r.status_code, r.text)
+                      break
+                  data = r.json()
+                  if not data:
+                      break
+                  repos += [repo["name"] for repo in data]
+                  page += 1
+              return repos
+
+          def get_commits(repo):
+              commits = []
+              page = 1
+              while True:
+                  url = (f"https://api.github.com/repos/{ORG}/{repo}/commits?"
+                         f"since={start_date.isoformat()}Z&until={end_date.isoformat()}Z&per_page=100&page={page}")
+                  headers = {"Authorization": f"token ${GITHUB_TOKEN}" ".
+                  r = requests.get(url, headers=headers)
+                  if r.status_code != 200:
+                      print(f"Error fetching commits for {repo}: {r.status_code}")
+                      break
+                  data = r.json()
+                  if not isinstance(data, list) or not data:
+                      break
+                  commits += data
+                  page += 1
+              return commits
+
+          def main():
+              contribution_count = defaultdict(int)
+              repos = get_repos()
+
+              for repo in repos:
+                  commits = get_commits(repo)
+                  for commit in commits:
+                      author = commit.get("author")
+                      if author and author.get("login"):
+                          contribution_count[author["login"]] += 1
+
+              top_contributors = sorted(contribution_count.items(), key=lambda x: x[1], reverse=True)
+
+              # Build the message
+              message = (
+                  "👥 **Community Spotlight Reminder** 🙌\n\n"
+                  "Here are the top GitHub contributors to all **Scribe** projects from "
+                  f"**{start_date.strftime('%B %d')}** to **{end_date.strftime('%B %d')}**:\n\n"
+              )
+              for user, count in top_contributors[:5]:  # Top 5 contributors
+                  message += f"- [{user}](https://github.com/{user}) ({count} commits)\n"
+
+              message += (
+                  "\n💬 Please reply in the thread with who you think should be spotlighted this month!\n"
+                  "We'll reach out to them for a short message and LinkedIn tag before posting. 💙\n"
+              )
+
+              # Escape message for GitHub Actions output
+              with open("message.txt", "w") as f:
+                  f.write(message)
+              print(f"message<<EOF\n{message}\nEOF" >> $GITHUB_OUTPUT)
+
+              # Log to summary
+              with open("$GITHUB_STEP_SUMMARY", "a") as f:
+                  f.write(f"**Community Spotlight Summary** 🟢\n")
+                  f.write(f"Date Range: {start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}\n")
+                  f.write(f"Repositories Scanned: {len(repos)}\n")
+                  f.write(f"Top Contributors:\n")
+                  for user, count in top_contributors[:5]:
+                      f.write(f"- {user}: {count} commits\n")
+                  f.write("\nMessage prepared for Matrix channel.\n")
+
+          if __name__ == "__main__":
+              main()
+          EOF
+
+      - name: Store message as output
+        id: store-message
+        run: |
+          echo "message=$(cat message.txt)" >> $GITHUB_OUTPUT
+
+  send-message:
+    runs-on: ubuntu-latest
+    needs: calculate-contributors
+    steps:
+      - name: Send message to Matrix channel
+        id: matrix-chat-message
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: 'matrix.org'
+          token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+          channel: ${{ secrets.MATRIX_ROOM_ID }}
+          message: ${{ needs.calculate-contributors.outputs.message }}
