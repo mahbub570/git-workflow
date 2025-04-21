@@ -13,11 +13,12 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-inactive: '0.01' # 14.4 minutes
-          comment-message: >
+          check-in-message: |
+            Hello bai ${{ inputs.check-in-message }}
+          comment-message: |
             <!-- AUTO-GENERATED CHECK-IN -->
-            ${{ inputs.check-in-message }}
+            mortu ${{ inputs.check-in-message }}
             
-            Additionally, this issue has been inactive for ${{ inputs.days-inactive }} days.
-                      
-          bot-username: 'github-actions[bot]' # Adjust if using a custom bot
-          ignore-label: 'ignore-checkin'
+            Additionally, this issue has been inactive for {{ days-inactive }} days.
+          bot-username: 'github-actions[bot]'
+          ignore-label: 'ignore-checkin' 
