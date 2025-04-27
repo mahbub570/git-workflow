@@ -1,6 +1,8 @@
 # Workflow: Community Spotlight Notification
-# Purpose: Calculates top contributors to Scribe projects over the past 30 days (25th of last month to 25th of current month)
-#          and sends a formatted message to a Matrix channel for the Community Spotlight feature.
+# Purpose: Calculates top non-organization contributors to Scribe projects over the past 30 days
+#          (25th of last month to 25th of current month) and sends a formatted message to a
+#          Matrix channel for the Community Spotlight feature. Excludes scribe-org members and
+#          includes links to pull requests grouped by project.
 # Triggers: Runs on the 25th of each month at 00:00 UTC or manually via workflow_dispatch.
 # Secrets Required:
 #   - GITHUB_TOKEN: For GitHub API access (provided by GitHub Actions by default).
@@ -12,13 +14,13 @@ name: Community Spotlight Notification
 on:
   schedule:
     - cron: '0 0 25 * *'  # Runs on the 25th of each month at 00:00 UTC
-  workflow_dispatch:  # Among: true  # Allows manual triggering
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   calculate-contributors:
     runs-on: ubuntu-latest
     outputs:
-      message: ${{ steps.calculate.outputs.message }}  # Output the formatted message for the Matrix notification
+      message: ${{ steps.calculate.outputs.message }}  # Output the formatted message for Matrix
 
     steps:
       # Checkout the repository to access the Python script
