@@ -13,7 +13,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           days-inactive: '0.01' # 14.4 minutes
-          skip-pr: 'true'  
+          skip-pr: 'false'  
           auto-add-label: 'false' 
           
           comment-message: |
