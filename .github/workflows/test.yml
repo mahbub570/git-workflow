@@ -21,3 +21,4 @@ jobs:
             Additionally, this issue has been inactive for {{ days-inactive }} days.
           bot-username: 'github-actions[bot]'
           ignore-label: 'ignore-checkin' 
+          stop-comment: 'checkin stop'
