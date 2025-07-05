@@ -39,17 +39,20 @@ jobs:
           fi
 
           # Check if it's a Code Night (last sync in Jan, Mar, May, Jul, Sep, Nov)
-          current_month=$(date +%m)
-          current_year=$(date +%Y)
-          next_bi_weekly_month=$(date -d "$next_bi_weekly_date" +%m)
-          next_bi_weekly_year=$(date -d "$next_bi_weekly_date" +%Y)
+          sync_month=$(date -d "$next_bi_weekly_date" +%m)
+          sync_year=$(date -d "$next_bi_weekly_date" +%Y)
+          
+          # Calculate the sync date after the next bi-weekly date
+          following_sync_date=$(date -d "$next_bi_weekly_date + 14 days" +%Y-%m-%d)
+          following_sync_month=$(date -d "$following_sync_date" +%m)
+          following_sync_year=$(date -d "$following_sync_date" +%Y)
           
           is_code_night="false"
           
-          # Check if current month is a Code Night month (01,03,05,07,09,11)
-          if [[ "$current_month" == "01" || "$current_month" == "03" || "$current_month" == "05" || "$current_month" == "08" || "$current_month" == "09" || "$current_month" == "11" ]]; then
-            # Check if next bi-weekly date is in the next month (or next year for December)
-            if [[ "$next_bi_weekly_month" != "$current_month" || "$next_bi_weekly_year" != "$current_year" ]]; then
+          # Check if current sync is in a Code Night month (01,03,05,07,09,11)
+          if [[ "$sync_month" == "01" || "$sync_month" == "03" || "$sync_month" == "05" || "$sync_month" == "07" || "$sync_month" == "09" || "$sync_month" == "11" ]]; then
+            # Check if the following sync would be in a different month (meaning this is the last sync of the current month)
+            if [[ "$following_sync_month" != "$sync_month" || "$following_sync_year" != "$sync_year" ]]; then
               is_code_night="true"
             fi
           fi
@@ -64,6 +67,9 @@ jobs:
           echo "weekdiff: $weekdiff" >> $GITHUB_STEP_SUMMARY
           echo "weekindex: $weekindex" >> $GITHUB_STEP_SUMMARY
           echo "next_bi_weekly_date: $next_bi_weekly_date" >> $GITHUB_STEP_SUMMARY
+          echo "sync_month: $sync_month" >> $GITHUB_STEP_SUMMARY
+          echo "following_sync_date: $following_sync_date" >> $GITHUB_STEP_SUMMARY
+          echo "following_sync_month: $following_sync_month" >> $GITHUB_STEP_SUMMARY
           echo "is_code_night: $is_code_night" >> $GITHUB_STEP_SUMMARY
           if [ "$weekindex" -eq 0 ]; then
             echo "🟢 It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
