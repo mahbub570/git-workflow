@@ -6,7 +6,7 @@ on:
   workflow_dispatch:  # Allows manual triggering
 
 env:
-  FIRST_RUN_DATE: "2024-11-13"  # Set the first Wednesday you want this to run
+  FIRST_RUN_DATE: "2024-11-20"  # Set the first Wednesday you want this to run
 
 jobs:
   weekindex:
