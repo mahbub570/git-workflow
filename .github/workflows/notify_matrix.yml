@@ -15,6 +15,7 @@ jobs:
       weekindex: ${{ steps.calculate.outputs.weekindex }}
       next_bi_weekly_date: ${{ steps.calculate.outputs.next_bi_weekly_date }}
       next_next_bi_weekly_date: ${{ steps.calculate.outputs.next_next_bi_weekly_date }}
+      is_code_night: ${{ steps.calculate.outputs.is_code_night }}
 
     steps:
       - name: Calculate week difference and next bi-weekly date
@@ -37,19 +38,40 @@ jobs:
 
           fi
 
+          # Check if it's a Code Night (last sync in Jan, Mar, May, Jul, Sep, Nov)
+          current_month=$(date +%m)
+          current_year=$(date +%Y)
+          next_bi_weekly_month=$(date -d "$next_bi_weekly_date" +%m)
+          next_bi_weekly_year=$(date -d "$next_bi_weekly_date" +%Y)
+          
+          is_code_night="false"
+          
+          # Check if current month is a Code Night month (01,03,05,07,09,11)
+          if [[ "$current_month" == "01" || "$current_month" == "03" || "$current_month" == "05" || "$current_month" == "07" || "$current_month" == "09" || "$current_month" == "11" ]]; then
+            # Check if next bi-weekly date is in the next month (or next year for December)
+            if [[ "$next_bi_weekly_month" != "$current_month" || "$next_bi_weekly_year" != "$current_year" ]]; then
+              is_code_night="true"
+            fi
+          fi
+
           echo "weekindex=$weekindex" >> "$GITHUB_OUTPUT"
           echo "next_bi_weekly_date=$next_bi_weekly_date" >> "$GITHUB_OUTPUT"
           echo "next_next_bi_weekly_date=$next_next_bi_weekly_date" >> "$GITHUB_OUTPUT"
+          echo "is_code_night=$is_code_night" >> "$GITHUB_OUTPUT"
 
           echo "FIRST_RUN_DATE: ${{ env.FIRST_RUN_DATE }}" >> $GITHUB_STEP_SUMMARY
           echo "current_date: $current_date" >> $GITHUB_STEP_SUMMARY
           echo "weekdiff: $weekdiff" >> $GITHUB_STEP_SUMMARY
           echo "weekindex: $weekindex" >> $GITHUB_STEP_SUMMARY
           echo "next_bi_weekly_date: $next_bi_weekly_date" >> $GITHUB_STEP_SUMMARY
+          echo "is_code_night: $is_code_night" >> $GITHUB_STEP_SUMMARY
           if [ "$weekindex" -eq 0 ]; then
             echo "🟢 It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
           else
             echo "🔴 It's the second week of the bi-weekly cycle. The action is going to be skipped." >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ "$is_code_night" == "true" ]; then
+            echo "🌙 This is a Code Night sync!" >> $GITHUB_STEP_SUMMARY
           fi
 
   send-message:
@@ -83,6 +105,7 @@ jobs:
             NEXT_EPOCH_TIME: ${{ env.NEXT_EPOCH_TIME }}
             NEXT_NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_NEXT_BI_WEEKLY_DATE }}
             NEXT_NEXT_EPOCH_TIME: ${{ env.NEXT_NEXT_EPOCH_TIME }}
+            IS_CODE_NIGHT: ${{ needs.weekindex.outputs.is_code_night }}
  
         run: |
             pip install requests
@@ -95,15 +118,37 @@ jobs:
             next_bi_weekly_date = os.environ.get('NEXT_BI_WEEKLY_DATE')
             next_next_epoch_time = os.environ.get('NEXT_NEXT_EPOCH_TIME')
             next_next_bi_weekly_date = os.environ.get('NEXT_NEXT_BI_WEEKLY_DATE')
+            is_code_night = os.environ.get('IS_CODE_NIGHT') == 'true'
 
             pad_name = f'axif-{next_bi_weekly_date}'
             url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
             print(f"Importing content to: https://etherpad.wikimedia.org/p/{pad_name}")
             print("mamamia",next_next_epoch_time)
+            
+            # Add Code Night section if it's a Code Night sync
+            code_night_section = ""
+            if is_code_night:
+                code_night_section = """
+            <h2>🌙 Code Night</h2>
+            <p>This is our monthly Code Night! After the dev sync, we'll continue with collaborative coding sessions.</p>
+            <p><strong>What is Code Night?</strong></p>
+            <ul>
+              <li>Collaborative coding sessions</li>
+              <li>Work on issues together</li>
+              <li>Get help with contributions</li>
+              <li>Pair programming opportunities</li>
+              <li>Perfect for both beginners and experienced developers</li>
+            </ul>
+            <p><strong>Code Night Participants:</strong></p>
+            <ul>
+              <li>Participant (what you'll be working on)</li>
+            </ul>
+            <br> <!-- Added space -->
+            """
         
             # The text you want to add to the pad
             content = f"""<html><body>
-            <h1>Scribe Dev Sync {next_bi_weekly_date}</h1>
+            <h1>Scribe Dev Sync {next_bi_weekly_date}{' + Code Night 🌙' if is_code_night else ''}</h1>
         
             <p>Pad directory:  https://etherpad.wikimedia.org/p/scribe-dev-sync</a><br>
             ZoneStamp:  https://zonestamp.toolforge.org/{next_epoch_time}</a></p>
@@ -128,6 +173,8 @@ jobs:
               <li>Name:</li>
             </ul>
             <br> <!-- Added space -->
+            
+            {code_night_section}
         
             <h2>Tasks (strikethrough ^/⌘ + 5 to mark as complete)</h2>
             <ul>
@@ -138,7 +185,7 @@ jobs:
             <h2>Recap</h2>
             <br> <!-- Added space -->
             <br> <!-- Added space -->
-            <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️</p>
+            <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️{' and Code Night 🌙' if is_code_night else ''}</p>
         
             <ul>
               <li>[Pad for this week](https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}) </a></li>
@@ -170,8 +217,9 @@ jobs:
             EOF
            
 
-      - name: Send message to Matrix channel
-        id: matrix-chat-message
+      - name: Send regular dev sync message to Matrix channel
+        if: ${{ needs.weekindex.outputs.is_code_night == 'false' }}
+        id: matrix-chat-message-regular
         uses: fadenb/matrix-chat-message@v0.0.6
         with:
           homeserver: 'matrix.org'
@@ -182,9 +230,31 @@ jobs:
 
             Details for it::
             - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
-            - This week’s pad: https://etherpad.wikimedia.org/p/activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}
+            - This week's pad: https://etherpad.wikimedia.org/p/activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}
             - All pads: https://etherpad.wikimedia.org/p/activist-dev-sync
 
             Please reply with anything you'd like to discuss 🧕🏼‍♀️
+
+            Thanks and have a great day! ❤️
+
+      - name: Send Code Night dev sync message to Matrix channel
+        if: ${{ needs.weekindex.outputs.is_code_night == 'true' }}
+        id: matrix-chat-message-code-night
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: 'matrix.org'
+          token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+          channel: ${{ secrets.MATRIX_ROOM_ID }}
+          message: |
+            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🤝♻️
+
+            🌙 **Special announcement**: This is also our monthly Code Night! After the dev sync, we'll continue with collaborative coding sessions where you can work on issues, get help with contributions, or pair program with other contributors. Perfect for both beginners and experienced developers! 💻✨
+
+            Details for it::
+            - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
+            - This week's pad: https://etherpad.wikimedia.org/p/activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}
+            - All pads: https://etherpad.wikimedia.org/p/activist-dev-sync
+
+            Please reply with anything you'd like to discuss 🧕🏼‍♀️ And let us know if you're planning to stay for Code Night!
 
             Thanks and have a great day! ❤️
