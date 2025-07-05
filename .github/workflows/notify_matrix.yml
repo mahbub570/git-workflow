@@ -86,6 +86,45 @@ jobs:
     needs:
       - weekindex
     steps:
+      - name: Debug Code Night Detection
+        run: |
+          echo "=== DEBUG CODE NIGHT DETECTION ===" >> $GITHUB_STEP_SUMMARY
+          echo "is_code_night output: ${{ needs.weekindex.outputs.is_code_night }}" >> $GITHUB_STEP_SUMMARY
+          echo "next_bi_weekly_date: ${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
+          
+          # Recalculate to debug
+          next_bi_weekly_date="${{ needs.weekindex.outputs.next_bi_weekly_date }}"
+          sync_month=$(date -d "$next_bi_weekly_date" +%m)
+          sync_year=$(date -d "$next_bi_weekly_date" +%Y)
+          following_sync_date=$(date -d "$next_bi_weekly_date + 14 days" +%Y-%m-%d)
+          following_sync_month=$(date -d "$following_sync_date" +%m)
+          following_sync_year=$(date -d "$following_sync_date" +%Y)
+          
+          echo "sync_month: $sync_month" >> $GITHUB_STEP_SUMMARY
+          echo "sync_year: $sync_year" >> $GITHUB_STEP_SUMMARY
+          echo "following_sync_date: $following_sync_date" >> $GITHUB_STEP_SUMMARY
+          echo "following_sync_month: $following_sync_month" >> $GITHUB_STEP_SUMMARY
+          echo "following_sync_year: $following_sync_year" >> $GITHUB_STEP_SUMMARY
+          
+          is_code_night_month="false"
+          if [[ "$sync_month" == "01" || "$sync_month" == "03" || "$sync_month" == "05" || "$sync_month" == "07" || "$sync_month" == "09" || "$sync_month" == "11" ]]; then
+            is_code_night_month="true"
+          fi
+          echo "is_code_night_month: $is_code_night_month" >> $GITHUB_STEP_SUMMARY
+          
+          is_last_sync_of_month="false"
+          if [[ "$following_sync_month" != "$sync_month" || "$following_sync_year" != "$sync_year" ]]; then
+            is_last_sync_of_month="true"
+          fi
+          echo "is_last_sync_of_month: $is_last_sync_of_month" >> $GITHUB_STEP_SUMMARY
+          
+          should_be_code_night="false"
+          if [[ "$is_code_night_month" == "true" && "$is_last_sync_of_month" == "true" ]]; then
+            should_be_code_night="true"
+          fi
+          echo "should_be_code_night: $should_be_code_night" >> $GITHUB_STEP_SUMMARY
+          echo "=== END DEBUG ===" >> $GITHUB_STEP_SUMMARY
+
       - name: Format EPOCH time
         id: epoch-time
         run: |
