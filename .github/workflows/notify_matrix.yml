@@ -109,12 +109,15 @@ jobs:
           # (upcoming Saturday is in code-night month AND following Saturday is in different month)
           if [ "$is_code_night_month" = true ] && [ "$current_saturday_month" -ne "$following_saturday_month" ]; then
             echo "IS_LAST_CODE_NIGHT_SYNC=true" >> $GITHUB_ENV
+            echo "🌙 This is the last dev sync of a code-night month - Code Night will be announced!"
             echo "🌙 This is the last dev sync of a code-night month - Code Night will be announced!" >> $GITHUB_STEP_SUMMARY
           elif [ "$is_code_night_month" = true ]; then
             echo "IS_LAST_CODE_NIGHT_SYNC=false" >> $GITHUB_ENV
+            echo "🔍 DEBUG: This is a special code-night month (month $current_saturday_month) and this is sync #$sync_number_in_month, but NOT the last sync of this month - Code Night message will NOT show"
             echo "🔍 DEBUG: This is a special code-night month (month $current_saturday_month) and this is sync #$sync_number_in_month, but NOT the last sync of this month - Code Night message will NOT show" >> $GITHUB_STEP_SUMMARY
           else
             echo "IS_LAST_CODE_NIGHT_SYNC=false" >> $GITHUB_ENV
+            echo "📅 Regular dev sync - no Code Night announcement needed (not a code-night month)"
             echo "📅 Regular dev sync - no Code Night announcement needed (not a code-night month)" >> $GITHUB_STEP_SUMMARY
           fi
           
