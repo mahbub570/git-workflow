@@ -62,14 +62,34 @@ jobs:
         id: epoch-time
         run: |
           current_epoch_time=$(date +%s)
+          current_date=$(date +%Y-%m-%d)
           next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }} 15:00:00" +%s)
           next_next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_next_bi_weekly_date }} 15:00:00" +%s)
           
           # Check if current month is January, March, May, July, September, or November
           current_month=$(date +%m)
+          current_month_name=$(date +%B)
+          next_sync_month=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }}" +%m)
+          next_sync_month_name=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }}" +%B)
+          
           is_code_night_month="false"
+          is_next_sync_code_night_month="false"
+          is_last_sync_of_code_night_month="false"
+          
+          # Check current month
           if [[ "$current_month" =~ ^(01|03|05|07|09|11)$ ]]; then
             is_code_night_month="true"
+          fi
+          
+          # Check next sync month
+          if [[ "$next_sync_month" =~ ^(01|03|05|07|09|11)$ ]]; then
+            is_next_sync_code_night_month="true"
+          fi
+          
+          # Check if this is the last sync of a Code Night month
+          # This happens when current month is Code Night month but next sync is NOT in a Code Night month
+          if [[ "$is_code_night_month" == "true" && "$is_next_sync_code_night_month" == "false" ]]; then
+            is_last_sync_of_code_night_month="true"
           fi
           
           echo "EPOCH_TIME=$current_epoch_time" >> $GITHUB_ENV
@@ -79,13 +99,36 @@ jobs:
           echo "NEXT_NEXT_BI_WEEKLY_DATE=${{ needs.weekindex.outputs.next_next_bi_weekly_date }}" >> $GITHUB_ENV
           echo "NEXT_NEXT_EPOCH_TIME=$next_next_epoch_time" >> $GITHUB_ENV
           echo "IS_CODE_NIGHT_MONTH=$is_code_night_month" >> $GITHUB_ENV
+          echo "IS_LAST_SYNC_OF_CODE_NIGHT_MONTH=$is_last_sync_of_code_night_month" >> $GITHUB_ENV
 
+          # Debug information
+          echo "🔍 DEBUG - Code Night Month Analysis:" >> $GITHUB_STEP_SUMMARY
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
+          echo "📅 Current date: $current_date" >> $GITHUB_STEP_SUMMARY
+          echo "📅 Current month: $current_month ($current_month_name)" >> $GITHUB_STEP_SUMMARY
+          echo "📅 Next sync date: ${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
+          echo "📅 Next sync month: $next_sync_month ($next_sync_month_name)" >> $GITHUB_STEP_SUMMARY
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$is_code_night_month" == "true" ]; then
+            echo "🌙 ✅ SPECIAL MONTH DETECTED: $current_month_name is a Code Night month!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📅 ❌ Regular month: $current_month_name is NOT a Code Night month" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$is_last_sync_of_code_night_month" == "true" ]; then
+            echo "🏁 🌙 SPECIAL DAY DETECTED: This is the LAST sync of Code Night month $current_month_name!" >> $GITHUB_STEP_SUMMARY
+            echo "🏁 🌙 Next sync will be in $next_sync_month_name (regular month)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "🔄 Regular sync timing - not the last sync of a Code Night month" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> $GITHUB_STEP_SUMMARY
           echo "Current EPOCH time: $current_epoch_time" >> $GITHUB_STEP_SUMMARY
           echo "Next bi-weekly date: ${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
           echo "Next EPOCH time (for sync): $next_epoch_time" >> $GITHUB_STEP_SUMMARY
           echo "Next next bi-weekly date: ${{ needs.weekindex.outputs.next_next_bi_weekly_date }}" >> $GITHUB_STEP_SUMMARY
           echo "Next next EPOCH time (for sync): $next_next_epoch_time" >> $GITHUB_STEP_SUMMARY
-          echo "Is Code Night month: $is_code_night_month" >> $GITHUB_STEP_SUMMARY
 
       - name: Add Content to Etherpad Without API
         env:
@@ -213,3 +256,22 @@ jobs:
             This month we are also hosting Code Night! Join us for collaborative coding sessions, pair programming, and tackling open issues together. Perfect for both beginners and experienced contributors! 💻✨
             
             Come code with us and help build amazing open source projects! 🚀
+
+      - name: Send last sync of Code Night month message
+        id: matrix-last-sync-message
+        if: ${{ env.IS_LAST_SYNC_OF_CODE_NIGHT_MONTH == 'true' }}
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: 'matrix.org'
+          token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+          channel: ${{ secrets.MATRIX_ROOM_ID }}
+          message: |
+            🏁🌙 **Final Code Night Sync of the Month!** 🌙🏁
+            
+            This is the last dev sync for our Code Night month! 📅✨
+            
+            🎉 Thanks to everyone who participated in this month's coding sessions
+            💻 Remember to wrap up any ongoing Code Night projects
+            🚀 The next Code Night month will be coming up soon!
+            
+            Let's make this final sync count! 💪
