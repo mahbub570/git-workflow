@@ -1,5 +1,4 @@
-name: Notify Matrix Channel of Test Message
-
+name: matrix_dev_sync_reminder
 on:
   schedule:
     - cron: '0 14 * * 4'  # Every Wednesday at 14:00 UTC 
@@ -9,7 +8,24 @@ env:
   FIRST_RUN_DATE: "2024-11-20"  # Set the first Wednesday you want this to run
 
 jobs:
+  check-repository:
+    runs-on: ubuntu-latest
+    outputs:
+      is_correct_repo: ${{ steps.check.outputs.is_correct_repo }}
+    steps:
+      - name: Check repository
+        id: check
+        run: |
+          if [ "$GITHUB_REPOSITORY" = "axif0/git-workflow" ]; then
+            echo "is_correct_repo=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_correct_repo=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::This workflow should only run in axif0/git-workflow repository."
+          fi
+
   weekindex:
+    needs: check-repository
+    if: needs.check-repository.outputs.is_correct_repo == 'true'
     runs-on: ubuntu-latest
     outputs:
       weekindex: ${{ steps.calculate.outputs.weekindex }}
@@ -17,7 +33,7 @@ jobs:
       next_next_bi_weekly_date: ${{ steps.calculate.outputs.next_next_bi_weekly_date }}
 
     steps:
-      - name: Calculate week difference and next bi-weekly date
+      - name: Calculate Next Date
         id: calculate
         run: |
           current_date=$(date +%Y-%m-%d)
@@ -26,7 +42,7 @@ jobs:
           weekdiff=$(((end - start) / 60 / 60 / 24 / 7))
           weekindex=$((weekdiff % 2))
 
-          # Calculate next bi-weekly date
+          # Calculate next bi-weekly date.
           if [ "$weekindex" -eq 0 ]; then
             next_bi_weekly_date=$(date -d "$current_date + 3 days" +%Y-%m-%d)
             next_next_bi_weekly_date=$(date -d "$current_date + 17 days" +%Y-%m-%d)
@@ -34,22 +50,23 @@ jobs:
           else
             next_bi_weekly_date=$(date -d "$current_date + 10 days" +%Y-%m-%d)
             next_next_bi_weekly_date=$(date -d "$current_date + 24 days" +%Y-%m-%d)
-
           fi
 
           echo "weekindex=$weekindex" >> "$GITHUB_OUTPUT"
           echo "next_bi_weekly_date=$next_bi_weekly_date" >> "$GITHUB_OUTPUT"
           echo "next_next_bi_weekly_date=$next_next_bi_weekly_date" >> "$GITHUB_OUTPUT"
 
+
           echo "FIRST_RUN_DATE: ${{ env.FIRST_RUN_DATE }}" >> $GITHUB_STEP_SUMMARY
           echo "current_date: $current_date" >> $GITHUB_STEP_SUMMARY
           echo "weekdiff: $weekdiff" >> $GITHUB_STEP_SUMMARY
           echo "weekindex: $weekindex" >> $GITHUB_STEP_SUMMARY
           echo "next_bi_weekly_date: $next_bi_weekly_date" >> $GITHUB_STEP_SUMMARY
+
           if [ "$weekindex" -eq 0 ]; then
-            echo "🟢 It's the first week of the bi-weekly cycle. The action is going to run." >> $GITHUB_STEP_SUMMARY
+            echo "🟢 It's the first week of the bi-weekly cycle. The action will run." >> $GITHUB_STEP_SUMMARY
           else
-            echo "🔴 It's the second week of the bi-weekly cycle. The action is going to be skipped." >> $GITHUB_STEP_SUMMARY
+            echo "🔴 It's the second week of the bi-weekly cycle. The action will be skipped." >> $GITHUB_STEP_SUMMARY
           fi
 
   send-message:
@@ -57,8 +74,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - weekindex
+      - check-repository
     steps:
-      - name: Format EPOCH time
+      - name: Format EPOCH Time
         id: epoch-time
         run: |
           current_epoch_time=$(date +%s)
@@ -66,7 +84,6 @@ jobs:
           next_next_epoch_time=$(date -d "${{ needs.weekindex.outputs.next_next_bi_weekly_date }} 15:00:00" +%s)
           echo "EPOCH_TIME=$current_epoch_time" >> $GITHUB_ENV
           echo "NEXT_BI_WEEKLY_DATE=${{ needs.weekindex.outputs.next_bi_weekly_date }}" >> $GITHUB_ENV
-          echo "NEXT_EPOCH_TIME=$next_epoch_time" >> $GITHUB_ENV
           echo "NEXT_EPOCH_TIME=$next_epoch_time" >> $GITHUB_ENV
           echo "NEXT_NEXT_BI_WEEKLY_DATE=${{ needs.weekindex.outputs.next_next_bi_weekly_date }}" >> $GITHUB_ENV
           echo "NEXT_NEXT_EPOCH_TIME=$next_next_epoch_time" >> $GITHUB_ENV
@@ -80,18 +97,19 @@ jobs:
       - name: Check if Code Night should be announced
         id: code-night-check
         run: |
-          # Extract the month from the upcoming Saturday (next_bi_weekly_date)
+          # Extract the month from the upcoming Saturday (next_bi_weekly_date).
           current_saturday_month=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }}" +%m)
-          # Remove leading zero for comparison
+
+          # Remove leading zero for comparison.
           current_saturday_month=$((10#$current_saturday_month))
-          
-          # Extract the month from the following Saturday (next_next_bi_weekly_date)
+
+          # Extract the month from the following Saturday (next_next_bi_weekly_date).
           following_saturday_month=$(date -d "${{ needs.weekindex.outputs.next_next_bi_weekly_date }}" +%m)
           following_saturday_month=$((10#$following_saturday_month))
-          
-          # Define code-night months (January, March, May, July, September, November)
+
+          # Define code-night months (January, March, May, July, September, November).
           code_night_months=(1 3 5 7 9 11)
-          
+
           is_code_night_month=false
           for month in "${code_night_months[@]}"; do
             if [ "$current_saturday_month" -eq "$month" ]; then
@@ -99,127 +117,123 @@ jobs:
               break
             fi
           done
-          
-          # Calculate which sync this is within the current month
+
+          # Calculate which sync this is within the current month.
           current_saturday_date=$(date -d "${{ needs.weekindex.outputs.next_bi_weekly_date }}" +%d)
           current_saturday_date=$((10#$current_saturday_date))
           sync_number_in_month=$(((current_saturday_date - 1) / 14 + 1))
-          
-          # Check if this is the last Saturday of a code-night month
-          # (upcoming Saturday is in code-night month AND following Saturday is in different month)
+
+          # Check if this is the last Saturday of a code-night month.
+          # Upcoming Saturday is in code-night month AND following Saturday is in different month.
           if [ "$is_code_night_month" = true ] && [ "$current_saturday_month" -ne "$following_saturday_month" ]; then
-            echo "IS_LAST_CODE_NIGHT_SYNC=true" >> $GITHUB_ENV
+            echo "IS_CODE_NIGHT_SYNC=true" >> $GITHUB_ENV
             echo "🌙 This is the last dev sync of a code-night month - Code Night will be announced!"
             echo "🌙 This is the last dev sync of a code-night month - Code Night will be announced!" >> $GITHUB_STEP_SUMMARY
           elif [ "$is_code_night_month" = true ]; then
-            echo "IS_LAST_CODE_NIGHT_SYNC=false" >> $GITHUB_ENV
+            echo "IS_CODE_NIGHT_SYNC=false" >> $GITHUB_ENV
             echo "🔍 DEBUG: This is a special code-night month (month $current_saturday_month) and this is sync #$sync_number_in_month, but NOT the last sync of this month - Code Night message will NOT show"
             echo "🔍 DEBUG: This is a special code-night month (month $current_saturday_month) and this is sync #$sync_number_in_month, but NOT the last sync of this month - Code Night message will NOT show" >> $GITHUB_STEP_SUMMARY
           else
-            echo "IS_LAST_CODE_NIGHT_SYNC=false" >> $GITHUB_ENV
+            echo "IS_CODE_NIGHT_SYNC=false" >> $GITHUB_ENV
             echo "📅 Regular dev sync - no Code Night announcement needed (not a code-night month)"
             echo "📅 Regular dev sync - no Code Night announcement needed (not a code-night month)" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           echo "Current Saturday month: $current_saturday_month" >> $GITHUB_STEP_SUMMARY
           echo "Following Saturday month: $following_saturday_month" >> $GITHUB_STEP_SUMMARY
           echo "Is code-night month: $is_code_night_month" >> $GITHUB_STEP_SUMMARY
           echo "Sync number in month: $sync_number_in_month" >> $GITHUB_STEP_SUMMARY
 
-      - name: Add Content to Etherpad Without API
+      - name: Etherpad Creation
         env:
-            NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
-            NEXT_EPOCH_TIME: ${{ env.NEXT_EPOCH_TIME }}
-            NEXT_NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_NEXT_BI_WEEKLY_DATE }}
-            NEXT_NEXT_EPOCH_TIME: ${{ env.NEXT_NEXT_EPOCH_TIME }}
- 
+          NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_BI_WEEKLY_DATE }}
+          NEXT_EPOCH_TIME: ${{ env.NEXT_EPOCH_TIME }}
+          NEXT_NEXT_BI_WEEKLY_DATE: ${{ env.NEXT_NEXT_BI_WEEKLY_DATE }}
+          NEXT_NEXT_EPOCH_TIME: ${{ env.NEXT_NEXT_EPOCH_TIME }}
         run: |
-            pip install requests
-            python - <<EOF
-            import requests
-            import os
-            from datetime import datetime
-        
-            next_epoch_time = os.environ.get('NEXT_EPOCH_TIME')
-            next_bi_weekly_date = os.environ.get('NEXT_BI_WEEKLY_DATE')
-            next_next_epoch_time = os.environ.get('NEXT_NEXT_EPOCH_TIME')
-            next_next_bi_weekly_date = os.environ.get('NEXT_NEXT_BI_WEEKLY_DATE')
+          pip install requests
+          python - <<EOF
+          import requests
+          import os
 
-            pad_name = f'axif-{next_bi_weekly_date}'
-            url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
-            print(f"Importing content to: https://etherpad.wikimedia.org/p/{pad_name}")
-            print("mamamia",next_next_epoch_time)
-        
-            # The text you want to add to the pad
-            content = f"""<html><body>
-            <h1>Scribe Dev Sync {next_bi_weekly_date}</h1>
-        
-            <p>Pad directory:  https://etherpad.wikimedia.org/p/scribe-dev-sync</a><br>
-            ZoneStamp:  https://zonestamp.toolforge.org/{next_epoch_time}</a></p>
-            <br> <!-- Added space -->
-        
-            <h2>Participants (please list yourself if you'd like to)</h2>
-            <ul>
-              <li>Participant</li>
-            </ul>
-            <br> <!-- Added space -->
-        
-            <h2>Topics</h2>
-            <ul>
-              <li>All: introductions 👋</li>
-              <li>All: does anyone want a calendar invite to the dev sync? If so, send them out :)
-                  <ul>
-                      <li>If you would like an invite, please message Andrew on Matrix/Element</li>
-                  </ul>
-                </li>
-              <li>Recap done by: NAME</li>
-              <li>Go through the [project board](https://github.com/orgs/scribe-org/projects/1)</a></li>
-              <li>Name:</li>
-            </ul>
-            <br> <!-- Added space -->
-        
-            <h2>Tasks (strikethrough ^/⌘ + 5 to mark as complete)</h2>
-            <ul>
-              <li>Task</li>
-            </ul>
-            <br> <!-- Added space -->
-        
-            <h2>Recap</h2>
-            <br> <!-- Added space -->
-            <br> <!-- Added space -->
-            <p>Here's the recap for today's/Saturday's dev sync 🧑‍💻♻️</p>
-        
-            <ul>
-              <li>[Pad for this week](https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}) </a></li>
-              <li>Note</li>
-            </ul>
-            <br> <!-- Added space -->
-        
-                <p>The next dev sync will be [Saturday the {next_next_bi_weekly_date} at 15:00 UTC](https://zonestamp.toolforge.org/{next_next_epoch_time}) </a>.</p>
-          
-            <br> <!-- Added space -->
-            <p>Nice outro 😊</p>
-        
-            </body></html>"""
-        
-            # Prepare the file to upload
-            files = {
-                'file': ('import.html', content.encode('utf-8'), 'text/html'),
-            }
-        
-            response = requests.post(url, files=files)
-        
-            if response.status_code in [200, 302]:
-                print(f"Content imported successfully into pad '{pad_name}'.")
-            elif response.status_code == 413:
-                print("The file is too large to upload.")
-            else:
-                print(f"Failed to import content. Status code: {response.status_code}")
-                print(response.text)
-            EOF
-           
+          next_epoch_time = os.environ.get('NEXT_EPOCH_TIME')
+          next_bi_weekly_date = os.environ.get('NEXT_BI_WEEKLY_DATE')
+          next_next_epoch_time = os.environ.get('NEXT_NEXT_EPOCH_TIME')
+          next_next_bi_weekly_date = os.environ.get('NEXT_NEXT_BI_WEEKLY_DATE')
 
-      - name: Send message to Matrix channel
+          pad_name = f'scribe-dev-sync-{next_bi_weekly_date}'
+          url = f'https://etherpad.wikimedia.org/p/{pad_name}/import'
+          print(f"Importing content to: https://etherpad.wikimedia.org/p/{pad_name}")
+
+          # The text you want to add to the pad.
+          content = f"""<html><body>
+          <h1><strong>Scribe Dev Sync {next_bi_weekly_date}</strong></h1>
+          <br>
+          <br>
+          <p>Pad directory:  https://etherpad.wikimedia.org/p/scribe-dev-sync</a><br>
+          ZoneStamp:  https://zonestamp.toolforge.org/{next_epoch_time}</a></p>
+          <br>
+
+          <h2>Participants (please list yourself if you'd like to)</h2>
+          <ul>
+            <li>Participant</li>
+          </ul>
+          <br>
+
+          <h2>Topics</h2>
+          <ul>
+            <li>All: Introductions 👋</li>
+            <li>All: Does anyone want a calendar invite to the dev sync?
+                <ul>
+                    <li>If you would like an invite, please message the team on Matrix/Element</li>
+                </ul>
+              </li>
+            <li>Recap done by: NAME</li>
+            <li>Go through the project board: https://github.com/orgs/scribe-org/projects/1</a></li>
+            <li>Name:</li>
+          </ul>
+          <br>
+
+          <h2>Tasks (strikethrough ^/⌘ + 5 to mark as complete)</h2>
+          <ul>
+            <li>Task</li>
+          </ul>
+          <br>
+
+          <h2><strong>Recap</strong></h2>
+          <br>
+          <br>
+          <p>Here's the recap for today/yesterday/Saturday's dev sync 🧑‍💻♻️</p>
+          <br>
+          <p>
+            - [Pad for the sync](https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }})
+            <br>
+            - Note
+          </p>
+          <br>
+          <p>The next dev sync will be [Saturday {next_next_bi_weekly_date} at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_NEXT_EPOCH_TIME }}). New joiners are always welcome!</p>
+          <br>
+          <p>Nice outro 😊</p>
+
+          </body></html>"""
+
+          # Prepare the file to upload.
+          files = {
+              'file': ('import.html', content.encode('utf-8'), 'text/html'),
+          }
+
+          response = requests.post(url, files=files)
+
+          if response.status_code in [200, 302]:
+              print(f"Content imported successfully into pad '{pad_name}'.")
+          elif response.status_code == 413:
+              print("The file is too large to upload.")
+          else:
+              print(f"Failed to import content. Status code: {response.status_code}")
+              print(response.text)
+          EOF
+
+      - name: Send Message to Matrix Channel
         id: matrix-chat-message
         uses: fadenb/matrix-chat-message@v0.0.6
         with:
@@ -227,15 +241,18 @@ jobs:
           token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
           channel: ${{ secrets.MATRIX_ROOM_ID }}
           message: |
-            Hey all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🤝♻️
+            Hello all! 🤖👋 Here's the reminder for [this Saturday's dev sync at 15:00 UTC](https://zonestamp.toolforge.org/${{ env.NEXT_EPOCH_TIME }}) 🧑‍💻♻️
 
-            Details for it::
-            - Call link: https://call.element.io/room/#/activist-dev-sync?roomId=!UddhHUSXxHAoAnImXb:call.ems.host&password=ASriEQCG4DE6Q1QSB313zig0bhLd62RN
-            - This week's pad: https://etherpad.wikimedia.org/p/activist-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}
-            - All pads: https://etherpad.wikimedia.org/p/activist-dev-sync
+            For those new to the community, every two Saturdays the Scribe team does a call to discuss the projects. We use [Element Call](https://call.element.io/) and a [pad from Wikimedia's Etherpad instance](https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}) for taking notes. Note that Element Call doesn't have a chat, so questions need to be written in the pad :)${{ env.IS_CODE_NIGHT_SYNC == 'true' && '
 
-            Please reply with anything you'd like to discuss 🧕🏼‍♀️${{ env.IS_LAST_CODE_NIGHT_SYNC == 'true' && '
+            **Also note: This dev sync is Code Night! 🌙 For the last dev sync every two months the community stays in the call to work on projects together, pair program and hang out :) All skill levels are welcome!**' || '' }}
 
-            🌙 **Special announcement**: This is the last dev sync of the month! Please consider staying after the sync for our monthly Code Night 🌙 where we can work on projects together, pair program, or just hang out and code. All skill levels welcome!' || '' }}
+            Details for the upcoming sync:
 
-            Thanks and have a great day! ❤️
+            - Call link: https://call.element.io/room/#/scribe-dev-sync?password=6fYAt2r2lnhntXpNu1b1BrCkDy1NHTXJ&roomId=%21MEatqydcuQXoqGtjfR%3Acall.ems.host
+            - This week's pad: https://etherpad.wikimedia.org/p/scribe-dev-sync-${{ env.NEXT_BI_WEEKLY_DATE }}
+            - All Scribe pads: https://etherpad.wikimedia.org/p/scribe-dev-sync
+
+            Please reply in the thread for this message with anything you'd like to discuss 🧵
+
+            Thanks and have a great day! 💙
